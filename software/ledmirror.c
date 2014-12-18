@@ -70,6 +70,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 #include <memory.h>
+#include <math.h>
 #include <sysexits.h>
 
 #define VERSION_STRING "v1.3.3"
@@ -85,8 +86,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/mmal/util/mmal_default_components.h"
 #include "interface/mmal/util/mmal_connection.h"
 
-//#include "RaspiCamControl.h"
-//#include "RaspiCLI.h"
+#include "pixelmap.h"
 
 #include <semaphore.h>
 
@@ -117,7 +117,8 @@ const int imagewidth = 16;//half width
 const int imageheight = 32;//half height
 const int captureSize = 64;
 
-unsigned char *imageData;
+unsigned char videoData[512];
+unsigned char overlayData[512];
 
 static void signal_handler(int signal_number);
 
@@ -217,7 +218,7 @@ static void printBin(n){
 static int quantize(level)
 {
    int output_pixel;
-   if(level < 100){
+   if(level < 50){
       output_pixel = 0;
    }else if(level < 150){
       output_pixel = 1;
@@ -239,6 +240,18 @@ static int pack(p1,p2,p3,p4){
 
 }
 
+static void spi_transferOverlay(char *buffer,int index){
+  overlayData[index] = buffer[2];
+  videoData[index] = buffer[2];
+  bcm2835_spi_transfern(&buffer[0], 3);
+}
+
+static void spi_transferVideo(char *buffer,int index){
+  videoData[index] = buffer[2];
+  bcm2835_spi_transfern(&buffer[0], 3);
+}
+
+
 static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 
          // MAX 1 - 4
@@ -254,13 +267,16 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
             int p3 = buffer->data[(z)+j+realimagewidth];
             int p2 = buffer->data[(z)+j+realimagewidth*2];
             int p1 = buffer->data[(z)+j+realimagewidth*3];
+
+            int prev_packed_4_pix = overlayData[i + imagewidth*imageheight/4];
             int packed_4_pix = pack(p1,p2,p3,p4);
+            int combined = prev_packed_4_pix | packed_4_pix;
 
             char output_buffer2[3];
             output_buffer2[0] = 0x00;
             output_buffer2[1] = i + imagewidth*imageheight/4;
-            output_buffer2[2] = packed_4_pix;
-            bcm2835_spi_transfern(&output_buffer2[0], 3);
+            output_buffer2[2] = combined;
+            spi_transferVideo(&output_buffer2[0],  output_buffer2[1] );
 
             if (i%imagewidth == (imagewidth-1)){
                j = j + realimagewidth*4;
@@ -279,13 +295,16 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
             int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
             int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
             int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
+
+            int prev_packed_4_pix = overlayData[i];
             int packed_4_pix = pack(p1,p2,p3,p4);
+            int combined = prev_packed_4_pix | packed_4_pix;
 
             char output_buffer2[3];
             output_buffer2[0] = 0x00;
             output_buffer2[1] = i;
-            output_buffer2[2] = packed_4_pix;
-            bcm2835_spi_transfern(&output_buffer2[0], 3);
+            output_buffer2[2] = combined;
+            spi_transferVideo(&output_buffer2[0],  output_buffer2[1] );
 
             if (i%imagewidth == (imagewidth-1)){
                j = j + realimagewidth*4;
@@ -305,13 +324,16 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
             int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
             int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
             int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
+
+            int prev_packed_4_pix = overlayData[256 + i + imagewidth*imageheight/4];
             int packed_4_pix = pack(p1,p2,p3,p4);
+            int combined = prev_packed_4_pix | packed_4_pix;
 
             char output_buffer2[3];
             output_buffer2[0] = 0x01;
-            output_buffer2[1] = i + imagewidth*imageheight/4;;
-            output_buffer2[2] = packed_4_pix;
-            bcm2835_spi_transfern(&output_buffer2[0], 3);
+            output_buffer2[1] = i + imagewidth*imageheight/4;
+            output_buffer2[2] = combined;
+            spi_transferVideo(&output_buffer2[0], 0x01 * 256 + output_buffer2[1]);
 
             if (i%imagewidth == (imagewidth-1)){
                j = j + realimagewidth*4;
@@ -330,13 +352,16 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
             int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
             int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
             int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
+            
+            int prev_packed_4_pix = overlayData[256 + i];
             int packed_4_pix = pack(p1,p2,p3,p4);
+            int combined = prev_packed_4_pix | packed_4_pix;
 
             char output_buffer2[3];
             output_buffer2[0] = 0x01;
             output_buffer2[1] = i;
-            output_buffer2[2] = packed_4_pix;
-            bcm2835_spi_transfern(&output_buffer2[0], 3);
+            output_buffer2[2] = combined;
+            spi_transferVideo(&output_buffer2[0], 0x01 * 256 + output_buffer2[1]);
 
             if (i%imagewidth == (imagewidth-1)){
                j = j + realimagewidth*4;
@@ -344,6 +369,30 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
             }
          }
 
+}
+
+static void displayImage(int *pixelstodraw){
+  int i = 0;
+  for(i=0; i<18;i++){
+
+    int index = pixellookup[pixelstodraw[i]][1] + pixellookup[pixelstodraw[i]][0] * 256;
+    int prev_packed_4_pix = videoData[index];
+    int packed_4_pix = 3<<pixellookup[pixelstodraw[i]][2]*2;
+
+    int combined = prev_packed_4_pix | packed_4_pix;
+
+    char output_buffer2[3];
+    output_buffer2[0] = pixellookup[pixelstodraw[i]][0];
+    output_buffer2[1] = pixellookup[pixelstodraw[i]][1];
+    output_buffer2[2] = combined;
+    spi_transferOverlay(&output_buffer2[0], index);
+  }
+  
+}
+
+static void test_ImageDraw(){
+    int image[18] = {1040,1041,1072,1073,1104,1105,1134,1135,1136,1137,1166,1167,1168,1169,1200,1201,1232,1233};
+    displayImage(image);
 }
 
 static void testLeds(){
@@ -469,6 +518,7 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
          mmal_buffer_header_mem_lock(buffer);
          pData->pstate->framescaptured++;
          renderVid(port,buffer);
+         test_ImageDraw();
          //testLeds();
          //clear();
          mmal_buffer_header_mem_unlock(buffer);

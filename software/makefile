@@ -13,12 +13,12 @@ CFLAGS = -Wall -g
 
 # define any directories containing header files other than /usr/include
 #
-INCLUDES = -Ibcm2835-1.36 -isystem/opt/vc/include -isystem/lib -isystem/opt/vc/include/interface/vcos/pthreads -isystem/opt/vc/include/interface/vmcs_host/linux -I../src/userland
+INCLUDES = -Ibcm2835-1.36 -isystem/opt/vc/include -isystem/lib -isystem/opt/vc/include/interface/vcos/pthreads -isystem/opt/vc/include/interface/vmcs_host/linux -I../../src/userland
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
 #   their path using -Lpath, something like:
-LFLAGS = -L../src/userland/build/lib
+LFLAGS = -L../../src/userland/build/lib
 
 # define any libraries to link into executable:
 #   if I want to link in libraries (libx.so or libx.a) I use the -llibname 

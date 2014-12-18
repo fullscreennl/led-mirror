@@ -119,6 +119,7 @@ const int captureSize = 64;
 
 unsigned char videoData[512];
 unsigned char overlayData[512];
+unsigned int framecounter;
 
 static void signal_handler(int signal_number);
 
@@ -240,10 +241,10 @@ static int pack(p1,p2,p3,p4){
 
 }
 
-static void spi_transferOverlay(char *buffer,int index){
+static void spi_transferOverlay(char *buffer, char *displaybuffer,int index){
   overlayData[index] = buffer[2];
-  videoData[index] = buffer[2];
-  bcm2835_spi_transfern(&buffer[0], 3);
+  //videoData[index] = buffer[2];
+  bcm2835_spi_transfern(&displaybuffer[0], 3);
 }
 
 static void spi_transferVideo(char *buffer,int index){
@@ -373,25 +374,38 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 
 static void displayImage(int *pixelstodraw){
   int i = 0;
-  for(i=0; i<18;i++){
+  for(i=0; i<20;i++){
 
     int index = pixellookup[pixelstodraw[i]][1] + pixellookup[pixelstodraw[i]][0] * 256;
-    int prev_packed_4_pix = videoData[index];
+    int prev_packed_4_pix = overlayData[index];
+    int prev_packed_video_pix = videoData[index];
+    int subcombined = prev_packed_4_pix | prev_packed_video_pix;
     int packed_4_pix = 3<<pixellookup[pixelstodraw[i]][2]*2;
 
-    int combined = prev_packed_4_pix | packed_4_pix;
+    int combined = subcombined | packed_4_pix;
+    
+    char display_buffer[3];
+    display_buffer[0] = pixellookup[pixelstodraw[i]][0];
+    display_buffer[1] = pixellookup[pixelstodraw[i]][1];
+    display_buffer[2] = combined;
 
     char output_buffer2[3];
     output_buffer2[0] = pixellookup[pixelstodraw[i]][0];
     output_buffer2[1] = pixellookup[pixelstodraw[i]][1];
-    output_buffer2[2] = combined;
-    spi_transferOverlay(&output_buffer2[0], index);
+    output_buffer2[2] = prev_packed_4_pix | packed_4_pix;
+    spi_transferOverlay(&output_buffer2[0], &display_buffer[0],  index);
   }
   
 }
 
 static void test_ImageDraw(){
-    int image[18] = {1040,1041,1072,1073,1104,1105,1134,1135,1136,1137,1166,1167,1168,1169,1200,1201,1232,1233};
+    int offset = framecounter * 32;
+    int xoffset = framecounter%32-15; 
+    memset(overlayData, 0, 512*sizeof(*overlayData));
+    int image[20] = {15 + offset + xoffset, 16 + offset+ xoffset, 47 + offset+ xoffset, 48+ offset+ xoffset, 77+ offset+ xoffset,78+ offset+ xoffset,79+ offset+ xoffset,80+ offset+ xoffset,81+ offset+ xoffset,82+ offset+ xoffset, 109+ offset+ xoffset,110+ offset+ xoffset,111+ offset+ xoffset,112+ offset+ xoffset,113+ offset+ xoffset,114+ offset+ xoffset, 143+ offset+ xoffset,144+ offset+ xoffset,175+ offset+ xoffset,176 + offset+ xoffset};
+    if (framecounter*32 > 1900){
+      framecounter = 0;
+    }
     displayImage(image);
 }
 
@@ -519,6 +533,7 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
          pData->pstate->framescaptured++;
          renderVid(port,buffer);
          test_ImageDraw();
+         framecounter += 1;
          //testLeds();
          //clear();
          mmal_buffer_header_mem_unlock(buffer);
@@ -788,7 +803,7 @@ int main(int argc, const char **argv)
    usleep(5000);
    bcm2835_gpio_write(RST, HIGH);
    //usleep(2000);
-
+   framecounter = 0;
    //test
    //Panel Configuration Register
    char output_buffer[2];

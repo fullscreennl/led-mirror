@@ -301,12 +301,10 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 }
 
 
-static void displayImage(int *pixelstodraw){
-
-  //clear();
+void displayImage(int *pixelstodraw, int length){
 
   int i = 0;
-  for(i=0; i<20;i++){
+  for(i=0; i<length;i++){
 
     int index = pixellookup[pixelstodraw[i]][1] + pixellookup[pixelstodraw[i]][0] * 256;
     int prev_packed_4_pix = overlayData[index];
@@ -329,43 +327,6 @@ static void displayImage(int *pixelstodraw){
 
   }
   
-}
-
-static void test_ImageDraw(){
-
-    int offset = framecounter * 32;
-    int xoffset = framecounter%32-15; 
-
-    memset(overlayData, 0, 512*sizeof(*overlayData));
-    int image[20] = { 15 + offset + xoffset, 
-                      16 + offset + xoffset, 
-                      47 + offset + xoffset, 
-                      48 + offset + xoffset, 
-                      77 + offset + xoffset,
-                      78 + offset + xoffset,
-                      79 + offset + xoffset,
-                      80 + offset + xoffset,
-                      81 + offset + xoffset,
-                      82 + offset + xoffset, 
-                      109 + offset + xoffset,
-                      110 + offset + xoffset,
-                      111 + offset + xoffset,
-                      112 + offset + xoffset,
-                      113 + offset + xoffset,
-                      114 + offset + xoffset, 
-                      143 + offset + xoffset,
-                      144 + offset + xoffset,
-                      175 + offset + xoffset,
-                      176 + offset + xoffset };
-
-    if (framecounter*32 > 1900){
-      framecounter = 0;
-    }
-
-    displayImage(image);
-
-    
-
 }
 
 
@@ -393,7 +354,10 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
       {
          mmal_buffer_header_mem_lock(buffer);
          pData->pstate->framescaptured++;
-         test_ImageDraw();
+
+         //celar the overlay buffer
+	 memset(overlayData, 0, 512*sizeof(*overlayData)); 
+	 test_ImageDraw(framecounter);
          renderVid(port,buffer);
          framecounter += 1;
          //testLeds();

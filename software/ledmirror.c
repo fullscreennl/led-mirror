@@ -65,7 +65,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // We use some GNU extensions (basename)
 #define _GNU_SOURCE
-
+#include "ledmirror.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -87,7 +87,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/mmal/util/mmal_connection.h"
 
 #include "pixelmap.h"
-
+#include "utils.h"
 #include <semaphore.h>
 
 #include <bcm2835.h>
@@ -113,9 +113,10 @@ const int MAX_BITRATE = 30000000; // 30Mbits/s
 /// Interval at which we check for an failure abort during capture
 const int ABORT_INTERVAL = 100; // ms
 
-const int imagewidth = 16;//half width
-const int imageheight = 32;//half height
 const int captureSize = 64;
+
+const int imagewidth = 16;
+const int imageheight = 32;
 
 unsigned char videoData[512];
 unsigned char overlayData[512];
@@ -125,6 +126,7 @@ static void signal_handler(int signal_number);
 
 // Forward
 typedef struct RASPIVID_STATE_S RASPIVID_STATE;
+
 
 /** Struct used to pass information in encoder port userdata to callback
  */
@@ -203,20 +205,7 @@ static void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
    mmal_buffer_header_release(buffer);
 }
 
-static void printBin(n){
-   printf("num %i :",n);
-   while (n) {
-       if (n & 1)
-           printf("1");
-       else
-           printf("0");
-
-       n >>= 1;
-   }
-   printf("\n");
-}
-
-static int quantize(level)
+static int quantize(int level)
 {
    int output_pixel;
    if(level < 50){
@@ -231,7 +220,7 @@ static int quantize(level)
    return output_pixel;
 }
 
-static int pack(p1,p2,p3,p4){
+int pack(int p1,int p2,int p3,int p4){
 
    int pixel_1 = quantize(p1) << 6;
    int pixel_2 = quantize(p2) << 4;
@@ -243,7 +232,6 @@ static int pack(p1,p2,p3,p4){
 
 static void spi_transferOverlay(char *buffer, char *displaybuffer,int index){
   overlayData[index] = buffer[2];
-  //videoData[index] = buffer[2];
   bcm2835_spi_transfern(&displaybuffer[0], 3);
 }
 
@@ -252,172 +240,66 @@ static void spi_transferVideo(char *buffer,int index){
   bcm2835_spi_transfern(&buffer[0], 3);
 }
 
+static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, int xOffset,int section){
+	
+        int i;
+        int j = 0;
+        int realimagewidth = captureSize;
+        int rowcount = 0;
+	int sectionPadding = 0;
+	int clusterIndexPadding = imagewidth * imageheight/4;  
+        int top_padding = (captureSize - 2*imageheight) * 64;
+	if(xOffset > 0){
+		clusterIndexPadding = 0;
+	}
+	if(section == 0x01){
+        	top_padding = ((captureSize - 2*imageheight) + imageheight) * 64;
+		sectionPadding = 256;
+	}
+	
+        j = 0;
+        rowcount = 0;
+        for(i=0; i < (imagewidth*imageheight/4); i++){
+            	int z = (16 - (i%imagewidth)) + top_padding + 16;
+            	int p4 = buffer->data[(z)+j+xOffset];
+            	int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
+            	int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
+            	int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
+
+            	int prev_packed_4_pix = overlayData[i+sectionPadding+clusterIndexPadding];
+            	int packed_4_pix = pack(p1,p2,p3,p4);
+            	int combined = prev_packed_4_pix | packed_4_pix;
+
+            	char output_buffer2[3];
+            	output_buffer2[0] = section;
+            	output_buffer2[1] = i+clusterIndexPadding;
+            	output_buffer2[2] = combined;
+            	spi_transferVideo(&output_buffer2[0], section * 256 + output_buffer2[1]);
+
+            	if (i%imagewidth == (imagewidth-1)){
+               		j = j + realimagewidth*4;
+               		rowcount ++;
+            	}
+        }
+
+}
 
 static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 
-         // MAX 1 - 4
-         int top_padding = (captureSize - 2*imageheight) * 64;
-         int i;
-         int j = 0;
-         int realimagewidth = captureSize;
-         int rowcount = 0;
-
-         for(i=0; i < (imagewidth*imageheight/4); i++){
-            int z = (16 - (i%imagewidth)) + top_padding + 16;
-            int p4 = buffer->data[(z)+j];
-            int p3 = buffer->data[(z)+j+realimagewidth];
-            int p2 = buffer->data[(z)+j+realimagewidth*2];
-            int p1 = buffer->data[(z)+j+realimagewidth*3];
-
-            int prev_packed_4_pix = overlayData[i + imagewidth*imageheight/4];
-            int packed_4_pix = pack(p1,p2,p3,p4);
-            int combined = prev_packed_4_pix | packed_4_pix;
-
-            char output_buffer2[3];
-            output_buffer2[0] = 0x00;
-            output_buffer2[1] = i + imagewidth*imageheight/4;
-            output_buffer2[2] = combined;
-            spi_transferVideo(&output_buffer2[0],  output_buffer2[1] );
-
-            if (i%imagewidth == (imagewidth-1)){
-               j = j + realimagewidth*4;
-               rowcount ++;
-            }
-         }
-         
-         //second column of digits   
-         int xOffset = 16;
-         // MAX 5 - 8
-         j = 0;
-         rowcount = 0;
-         for(i=0; i < (imagewidth*imageheight/4); i++){
-            int z = (16 - (i%imagewidth)) + top_padding + 16;
-            int p4 = buffer->data[(z)+j+xOffset];
-            int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
-            int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
-            int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
-
-            int prev_packed_4_pix = overlayData[i];
-            int packed_4_pix = pack(p1,p2,p3,p4);
-            int combined = prev_packed_4_pix | packed_4_pix;
-
-            char output_buffer2[3];
-            output_buffer2[0] = 0x00;
-            output_buffer2[1] = i;
-            output_buffer2[2] = combined;
-            spi_transferVideo(&output_buffer2[0],  output_buffer2[1] );
-
-            if (i%imagewidth == (imagewidth-1)){
-               j = j + realimagewidth*4;
-               rowcount ++;
-            }
-         }
-         
-         //first column of digits , dummy write to max 9 - 16  
-         // MAX 9 - 12 
-         xOffset = 0;
-         top_padding = ((captureSize - 2*imageheight) + imageheight) * 64;
-         j = 0;
-         rowcount = 0;
-         for(i=0; i < (imagewidth*imageheight/4); i++){
-            int z = (16 - (i%imagewidth)) + top_padding + 16;
-            int p4 = buffer->data[(z)+j+xOffset];
-            int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
-            int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
-            int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
-
-            int prev_packed_4_pix = overlayData[256 + i + imagewidth*imageheight/4];
-            int packed_4_pix = pack(p1,p2,p3,p4);
-            int combined = prev_packed_4_pix | packed_4_pix;
-
-            char output_buffer2[3];
-            output_buffer2[0] = 0x01;
-            output_buffer2[1] = i + imagewidth*imageheight/4;
-            output_buffer2[2] = combined;
-            spi_transferVideo(&output_buffer2[0], 0x01 * 256 + output_buffer2[1]);
-
-            if (i%imagewidth == (imagewidth-1)){
-               j = j + realimagewidth*4;
-               rowcount ++;
-            }
-         };
-         
-         //second column of digits , dummy write to max 9 - 16  
-         xOffset = 16;
-          // MAX 13 - 16
-         j = 0;
-         rowcount = 0;
-         for(i=0; i < (imagewidth*imageheight/4); i++){
-            int z = (16 - (i%imagewidth)) + top_padding + 16;
-            int p4 = buffer->data[(z)+j+xOffset];
-            int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
-            int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
-            int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
-            
-            int prev_packed_4_pix = overlayData[256 + i];
-            int packed_4_pix = pack(p1,p2,p3,p4);
-            int combined = prev_packed_4_pix | packed_4_pix;
-
-            char output_buffer2[3];
-            output_buffer2[0] = 0x01;
-            output_buffer2[1] = i;
-            output_buffer2[2] = combined;
-            spi_transferVideo(&output_buffer2[0], 0x01 * 256 + output_buffer2[1]);
-
-            if (i%imagewidth == (imagewidth-1)){
-               j = j + realimagewidth*4;
-               rowcount ++;
-            }
-         }
+	int xOffset = 0;
+	renderVidSection(port,buffer,xOffset,0x00);
+        
+	xOffset = 16;
+	renderVidSection(port,buffer,xOffset,0x00);
+	
+	xOffset = 0;
+	renderVidSection(port,buffer,xOffset,0x01);
+	
+	xOffset = 16;
+	renderVidSection(port,buffer,xOffset,0x01);
 
 }
 
-static void clear(){
-   //test pixel loop
-   int i;
-   int j = 0;
-   int realimagewidth = 32;
-   int rowcount = 0;
-   for(i=0; i < 2*(imagewidth*imageheight/4); i++){
-     int p4 = 0;
-     int p3 = 0;
-     int p2 = 0;
-     int p1 = 0;
-     int packed_4_pix = pack(p1,p2,p3,p4);
-
-     char output_buffer2[3];
-     output_buffer2[0] = 0x00;
-     output_buffer2[1] = i;
-     output_buffer2[2] = packed_4_pix;
-     bcm2835_spi_transfern(&output_buffer2[0], 3);
-
-     if (i%imagewidth == (imagewidth-1)){
-        j = j + realimagewidth*4;
-        rowcount ++;
-     }
-   }
-
-   for(i=0; i < 2*(imagewidth*imageheight/4); i++){
-     int p4 = 0;
-     int p3 = 0;
-     int p2 = 0;
-     int p1 = 0;
-     int packed_4_pix = pack(p1,p2,p3,p4);
-
-     char output_buffer2[3];
-     output_buffer2[0] = 0x01;
-     output_buffer2[1] = i;
-     output_buffer2[2] = packed_4_pix;
-     bcm2835_spi_transfern(&output_buffer2[0], 3);
-
-     if (i%imagewidth == (imagewidth-1)){
-        j = j + realimagewidth*4;
-        rowcount ++;
-     }
-   }
-
-   printf("total rows %u\n",rowcount);
-}
 
 static void displayImage(int *pixelstodraw){
 
@@ -484,57 +366,6 @@ static void test_ImageDraw(){
 
     
 
-}
-
-static void testLeds(){
-   //test pixel loop
-   int i;
-   int j = 0;
-   int realimagewidth = 32;
-   int rowcount = 0;
-   for(i=0; i < 2*(imagewidth*imageheight/4); i++){
-     int p4 = 0;
-     int p3 = 90;
-     int p2 = 120;
-     int p1 = 240;
-     int packed_4_pix = pack(p1,p2,p3,p4);
-
-     char output_buffer2[3];
-     output_buffer2[0] = 0x00;
-     output_buffer2[1] = i;
-     output_buffer2[2] = packed_4_pix;
-     bcm2835_spi_transfern(&output_buffer2[0], 3);
-
-     if (i%imagewidth == (imagewidth-1)){
-        j = j + realimagewidth*4;
-        rowcount ++;
-        usleep(200000);
-     }
-     usleep(500000);
-   }
-
-   for(i=0; i < 2*(imagewidth*imageheight/4); i++){
-     int p4 = 0;
-     int p3 = 90;
-     int p2 = 120;
-     int p1 = 240;
-     int packed_4_pix = pack(p1,p2,p3,p4);
-
-     char output_buffer2[3];
-     output_buffer2[0] = 0x01;
-     output_buffer2[1] = i;
-     output_buffer2[2] = packed_4_pix;
-     bcm2835_spi_transfern(&output_buffer2[0], 3);
-
-     if (i%imagewidth == (imagewidth-1)){
-        j = j + realimagewidth*4;
-        rowcount ++;
-        usleep(200000);
-     }
-     usleep(500000);
-   }
-
-   
 }
 
 

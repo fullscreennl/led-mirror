@@ -1,5 +1,6 @@
-//http://www.raspberry-projects.com/pi/programming-in-c/spi/using-the-spi-interface
+//This is a modified version of CAMVC.C - http://www.cheerfulprogrammer.com/downloads/camcv.c
 
+//Info using spi - http://www.raspberry-projects.com/pi/programming-in-c/spi/using-the-spi-interface
 
 /*MODIFIED RASPIVID TO CAMCV.C
 This is just a very stripped down version of raspivid (copy right info below), combined with some work from Pierre Raufast, specifically http://raufast.org/download/camcv_vid0.c. 
@@ -132,28 +133,28 @@ typedef struct RASPIVID_STATE_S RASPIVID_STATE;
  */
 typedef struct
 {
-   RASPIVID_STATE *pstate;              /// pointer to our state in case required in callback
-   int abort;                           /// Set to 1 in callback if an error occurs to attempt to abort the capture
+    RASPIVID_STATE *pstate;              /// pointer to our state in case required in callback
+    int abort;                           /// Set to 1 in callback if an error occurs to attempt to abort the capture
 } PORT_USERDATA;
 
 /** Structure containing all state information for the current run
  */
 struct RASPIVID_STATE_S
 {
-   int timeout;                        /// Time taken before frame is grabbed and app then shuts down. Units are milliseconds
-   int width;                          /// Requested width of image
-   int height;                         /// requested height of image
-   int bitrate;                        /// Requested bitrate
-   int framerate;                      /// Requested frame rate (fps)
-   int verbose;                        /// !0 if want detailed run information
-   
-   int framescaptured;
+    int timeout;                        /// Time taken before frame is grabbed and app then shuts down. Units are milliseconds
+    int width;                          /// Requested width of image
+    int height;                         /// requested height of image
+    int bitrate;                        /// Requested bitrate
+    int framerate;                      /// Requested frame rate (fps)
+    int verbose;                        /// !0 if want detailed run information
 
-   MMAL_COMPONENT_T *camera_component;    /// Pointer to the camera component
+    int framescaptured;
 
-   MMAL_POOL_T *video_pool; /// Pointer to the pool of buffers used by video output port
+    MMAL_COMPONENT_T *camera_component;    /// Pointer to the camera component
 
-   PORT_USERDATA callback_data;        /// Used to move data to the encoder callback
+    MMAL_POOL_T *video_pool; /// Pointer to the pool of buffers used by video output port
+
+    PORT_USERDATA callback_data;        /// Used to move data to the encoder callback
 };
 
 /**
@@ -163,24 +164,23 @@ struct RASPIVID_STATE_S
  */
 static void default_status(RASPIVID_STATE *state)
 {
-   if (!state)
-   {
-      vcos_assert(0);
-      return;
-   }
+    if (!state)
+    {
+        vcos_assert(0);
+        return;
+    }
 
-   // Default everything to zero
-   memset(state, 0, sizeof(RASPIVID_STATE));
+    // Default everything to zero
+    memset(state, 0, sizeof(RASPIVID_STATE));
 
-   // Now set anything non-zero
-   state->timeout = -1;     // 5s delay before take image
-   state->width = captureSize;       // Default to 1080p
-   state->height = captureSize;
-   state->bitrate = 17000000; // This is a decent default bitrate for 1080p
-   state->framerate = VIDEO_FRAME_RATE_NUM;
-   state->verbose = 0;
-   state->framescaptured = 0;
-
+    // Now set anything non-zero
+    state->timeout = -1;     // 5s delay before take image
+    state->width = captureSize;       // Default to 1080p
+    state->height = captureSize;
+    state->bitrate = 17000000; // This is a decent default bitrate for 1080p
+    state->framerate = VIDEO_FRAME_RATE_NUM;
+    state->verbose = 0;
+    state->framescaptured = 0;
 }
 
 
@@ -194,123 +194,123 @@ static void default_status(RASPIVID_STATE *state)
  */
 static void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-   if (buffer->cmd == MMAL_EVENT_PARAMETER_CHANGED)
-   {
-   }
-   else
-   {
-      vcos_log_error("Received unexpected camera control callback event, 0x%08x", buffer->cmd);
-   }
+    if (buffer->cmd == MMAL_EVENT_PARAMETER_CHANGED)
+    {
+    }
+    else
+    {
+        vcos_log_error("Received unexpected camera control callback event, 0x%08x", buffer->cmd);
+    }
 
-   mmal_buffer_header_release(buffer);
+    mmal_buffer_header_release(buffer);
 }
 
 int pack(int p1,int p2,int p3,int p4){
 
-   int pixel_1 = quantize(p1) << 6;
-   int pixel_2 = quantize(p2) << 4;
-   int pixel_3 = quantize(p3) << 2;
-   int pixel_4 = quantize(p4);
-   return pixel_1+pixel_2+pixel_3+pixel_4;
+    int pixel_1 = quantize(p1) << 6;
+    int pixel_2 = quantize(p2) << 4;
+    int pixel_3 = quantize(p3) << 2;
+    int pixel_4 = quantize(p4);
+    return pixel_1+pixel_2+pixel_3+pixel_4;
 
 }
 
 static void spi_transferOverlay(char *buffer, char *displaybuffer,int index){
-  overlayData[index] = buffer[2];
-  bcm2835_spi_transfern(&displaybuffer[0], 3);
+    overlayData[index] = buffer[2];
+    bcm2835_spi_transfern(&displaybuffer[0], 3);
 }
 
 static void spi_transferVideo(char *buffer,int index){
-  videoData[index] = buffer[2];
-  bcm2835_spi_transfern(&buffer[0], 3);
+    videoData[index] = buffer[2];
+    bcm2835_spi_transfern(&buffer[0], 3);
 }
 
 static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, int xOffset,int section){
-	
-        int i;
-        int j = 0;
-        int realimagewidth = captureSize;
-        int rowcount = 0;
-	int sectionPadding = 0;
-	int clusterIndexPadding = imagewidth * imageheight/4;  
-        int top_padding = (captureSize - 2*imageheight) * 64;
-	if(xOffset > 0){
-		clusterIndexPadding = 0;
-	}
-	if(section == 0x01){
-        	top_padding = ((captureSize - 2*imageheight) + imageheight) * 64;
-		sectionPadding = 256;
-	}
-	
-        j = 0;
-        rowcount = 0;
-        for(i=0; i < (imagewidth*imageheight/4); i++){
-            	int z = (16 - (i%imagewidth)) + top_padding + 16;
-            	int p4 = buffer->data[(z)+j+xOffset];
-            	int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
-            	int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
-            	int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
+    
+    int i;
+    int j = 0;
+    int realimagewidth = captureSize;
+    int rowcount = 0;
+    int sectionPadding = 0;
+    int clusterIndexPadding = imagewidth * imageheight/4;  
+    int top_padding = (captureSize - 2*imageheight) * 64;
+    if(xOffset > 0){
+        clusterIndexPadding = 0;
+    }
+    if(section == 0x01){
+        top_padding = ((captureSize - 2*imageheight) + imageheight) * 64;
+        sectionPadding = 256;
+    }
+    
+    j = 0;
+    rowcount = 0;
+    for(i=0; i < (imagewidth*imageheight/4); i++){
+            int z = (16 - (i%imagewidth)) + top_padding + 16;
+            int p4 = buffer->data[(z)+j+xOffset];
+            int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
+            int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
+            int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
 
-            	int prev_packed_4_pix = overlayData[i+sectionPadding+clusterIndexPadding];
-            	int packed_4_pix = pack(p1,p2,p3,p4);
-            	int combined = prev_packed_4_pix | packed_4_pix;
+            int prev_packed_4_pix = overlayData[i+sectionPadding+clusterIndexPadding];
+            int packed_4_pix = pack(p1,p2,p3,p4);
+            int combined = prev_packed_4_pix | packed_4_pix;
 
-            	char output_buffer2[3];
-            	output_buffer2[0] = section;
-            	output_buffer2[1] = i+clusterIndexPadding;
-            	output_buffer2[2] = combined;
-            	spi_transferVideo(&output_buffer2[0], section * 256 + output_buffer2[1]);
+            char output_buffer2[3];
+            output_buffer2[0] = section;
+            output_buffer2[1] = i+clusterIndexPadding;
+            output_buffer2[2] = combined;
+            spi_transferVideo(&output_buffer2[0], section * 256 + output_buffer2[1]);
 
-            	if (i%imagewidth == (imagewidth-1)){
-               		j = j + realimagewidth*4;
-               		rowcount ++;
-            	}
-        }
+            if (i%imagewidth == (imagewidth-1)){
+                j = j + realimagewidth*4;
+                rowcount ++;
+            }
+    }
 
 }
 
 static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 
-	int xOffset = 0;
-	renderVidSection(port,buffer,xOffset,0x00);
+    int xOffset = 0;
+    renderVidSection(port,buffer,xOffset,0x00);
         
-	xOffset = 16;
-	renderVidSection(port,buffer,xOffset,0x00);
-	
-	xOffset = 0;
-	renderVidSection(port,buffer,xOffset,0x01);
-	
-	xOffset = 16;
-	renderVidSection(port,buffer,xOffset,0x01);
+    xOffset = 16;
+    renderVidSection(port,buffer,xOffset,0x00);
+
+    xOffset = 0;
+    renderVidSection(port,buffer,xOffset,0x01);
+
+    xOffset = 16;
+    renderVidSection(port,buffer,xOffset,0x01);
 
 }
 
 
 void displayImage(int *pixelstodraw, int length){
 
-  int i = 0;
-  for(i=0; i<length;i++){
+    int i = 0;
+    for(i=0; i<length;i++){
 
-    int index = pixellookup[pixelstodraw[i]][1] + pixellookup[pixelstodraw[i]][0] * 256;
-    int prev_packed_4_pix = overlayData[index];
-    int prev_packed_video_pix = videoData[index];
-    int subcombined = prev_packed_4_pix | prev_packed_video_pix;
-    int packed_4_pix = 3<<pixellookup[pixelstodraw[i]][2]*2;
+        int index = pixellookup[pixelstodraw[i]][1] + pixellookup[pixelstodraw[i]][0] * 256;
+        int prev_packed_4_pix = overlayData[index];
+        int prev_packed_video_pix = videoData[index];
+        int subcombined = prev_packed_4_pix | prev_packed_video_pix;
+        int packed_4_pix = 3<<pixellookup[pixelstodraw[i]][2]*2;
 
-    int combined = subcombined | packed_4_pix;
-    
-    char display_buffer[3];
-    display_buffer[0] = pixellookup[pixelstodraw[i]][0];
-    display_buffer[1] = pixellookup[pixelstodraw[i]][1];
-    display_buffer[2] = combined;
+        int combined = subcombined | packed_4_pix;
 
-    char output_buffer2[3];
-    output_buffer2[0] = pixellookup[pixelstodraw[i]][0];
-    output_buffer2[1] = pixellookup[pixelstodraw[i]][1];
-    output_buffer2[2] = prev_packed_4_pix | packed_4_pix;
-    spi_transferOverlay(&output_buffer2[0], &display_buffer[0],  index);
+        char display_buffer[3];
+        display_buffer[0] = pixellookup[pixelstodraw[i]][0];
+        display_buffer[1] = pixellookup[pixelstodraw[i]][1];
+        display_buffer[2] = combined;
 
-  }
+        char output_buffer2[3];
+        output_buffer2[0] = pixellookup[pixelstodraw[i]][0];
+        output_buffer2[1] = pixellookup[pixelstodraw[i]][1];
+        output_buffer2[2] = prev_packed_4_pix | packed_4_pix;
+        spi_transferOverlay(&output_buffer2[0], &display_buffer[0],  index);
+
+    }
   
 }
 
@@ -325,58 +325,57 @@ void displayImage(int *pixelstodraw, int length){
  */
 static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-   MMAL_BUFFER_HEADER_T *new_buffer;
+    MMAL_BUFFER_HEADER_T *new_buffer;
 
-   // We pass our file handle and other stuff in via the userdata field.
+    // We pass our file handle and other stuff in via the userdata field.
 
-   PORT_USERDATA *pData = (PORT_USERDATA *)port->userdata;
+    PORT_USERDATA *pData = (PORT_USERDATA *)port->userdata;
 
-   if (pData)
-   {
-      int bytes_written = buffer->length;
+    if (pData)
+    {
+        int bytes_written = buffer->length;
 
-      if (buffer->length)
-      {
-         mmal_buffer_header_mem_lock(buffer);
-         pData->pstate->framescaptured++;
+        if (buffer->length)
+        {
+            mmal_buffer_header_mem_lock(buffer);
+            pData->pstate->framescaptured++;
 
-         //celar the overlay buffer
-	 memset(overlayData, 0, 512*sizeof(*overlayData)); 
-	 test_ImageDraw(framecounter);
-         renderVid(port,buffer);
-         framecounter += 1;
-         //testLeds();
-         //clear();
-         mmal_buffer_header_mem_unlock(buffer);
-      }
+            //clear the overlay buffer
+            memset(overlayData, 0, 512*sizeof(*overlayData)); 
+            test_ImageDraw(framecounter);
+            renderVid(port,buffer);
+            framecounter += 1;
 
-      if (bytes_written != buffer->length)
-      {
-         vcos_log_error("Failed to write buffer data (%d from %d)- aborting", bytes_written, buffer->length);
-         pData->abort = 1;
-      }
-   }
-   else
-   {
-      vcos_log_error("Received a encoder buffer callback with no state");
-   }
+            mmal_buffer_header_mem_unlock(buffer);
+        }
 
-   // release buffer back to the pool
-   mmal_buffer_header_release(buffer);
+        if (bytes_written != buffer->length)
+        {
+            vcos_log_error("Failed to write buffer data (%d from %d)- aborting", bytes_written, buffer->length);
+            pData->abort = 1;
+        }
+    }
+    else
+    {
+        vcos_log_error("Received a encoder buffer callback with no state");
+    }
 
-   // and send one back to the port (if still open)
-   if (port->is_enabled)
-   {
-      MMAL_STATUS_T status  = -1;
+    // release buffer back to the pool
+    mmal_buffer_header_release(buffer);
 
-      new_buffer = mmal_queue_get(pData->pstate->video_pool->queue);
+    // and send one back to the port (if still open)
+    if (port->is_enabled)
+    {
+        MMAL_STATUS_T status  = -1;
 
-      if (new_buffer)
-         status = mmal_port_send_buffer(port, new_buffer);
+        new_buffer = mmal_queue_get(pData->pstate->video_pool->queue);
 
-      if (!new_buffer || status != MMAL_SUCCESS)
-         vcos_log_error("Unable to return a buffer to the video port");
-   }
+        if (new_buffer)
+            status = mmal_port_send_buffer(port, new_buffer);
+
+        if (!new_buffer || status != MMAL_SUCCESS)
+            vcos_log_error("Unable to return a buffer to the video port");
+    }
 }
 
 
@@ -390,43 +389,43 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
  */
 static MMAL_STATUS_T create_camera_component(RASPIVID_STATE *state)
 {
-   MMAL_COMPONENT_T *camera = 0;
-   MMAL_ES_FORMAT_T *format;
-   MMAL_PORT_T *video_port = NULL, *still_port = NULL;
-   MMAL_STATUS_T status;
+    MMAL_COMPONENT_T *camera = 0;
+    MMAL_ES_FORMAT_T *format;
+    MMAL_PORT_T *video_port = NULL, *still_port = NULL;
+    MMAL_STATUS_T status;
 
-   /* Create the component */
-   status = mmal_component_create(MMAL_COMPONENT_DEFAULT_CAMERA, &camera);
+    /* Create the component */
+    status = mmal_component_create(MMAL_COMPONENT_DEFAULT_CAMERA, &camera);
 
-   if (status != MMAL_SUCCESS)
-   {
-      vcos_log_error("Failed to create camera component");
-      goto error;
-   }
+    if (status != MMAL_SUCCESS)
+    {
+        vcos_log_error("Failed to create camera component");
+        goto error;
+    }
 
-   if (!camera->output_num)
-   {
-      status = MMAL_ENOSYS;
-      vcos_log_error("Camera doesn't have output ports");
-      goto error;
-   }
+    if (!camera->output_num)
+    {
+        status = MMAL_ENOSYS;
+        vcos_log_error("Camera doesn't have output ports");
+        goto error;
+    }
 
-   video_port = camera->output[MMAL_CAMERA_VIDEO_PORT];
-   still_port = camera->output[MMAL_CAMERA_CAPTURE_PORT];
+    video_port = camera->output[MMAL_CAMERA_VIDEO_PORT];
+    still_port = camera->output[MMAL_CAMERA_CAPTURE_PORT];
 
-   // Enable the camera, and tell it its control callback function
-   status = mmal_port_enable(camera->control, camera_control_callback);
+    // Enable the camera, and tell it its control callback function
+    status = mmal_port_enable(camera->control, camera_control_callback);
 
-   if (status != MMAL_SUCCESS)
-   {
-      vcos_log_error("Unable to enable control port : error %d", status);
-      goto error;
-   }
+    if (status != MMAL_SUCCESS)
+    {
+        vcos_log_error("Unable to enable control port : error %d", status);
+        goto error;
+    }
 
-   //  set up the camera configuration
-   {
-      MMAL_PARAMETER_CAMERA_CONFIG_T cam_config =
-      {
+    //  set up the camera configuration
+    {
+        MMAL_PARAMETER_CAMERA_CONFIG_T cam_config =
+        {
          { MMAL_PARAMETER_CAMERA_CONFIG, sizeof(cam_config) },
          .max_stills_w = state->width,
          .max_stills_h = state->height,
@@ -438,107 +437,107 @@ static MMAL_STATUS_T create_camera_component(RASPIVID_STATE *state)
          .stills_capture_circular_buffer_height = 0,
          .fast_preview_resume = 0,
          .use_stc_timestamp = MMAL_PARAM_TIMESTAMP_MODE_RESET_STC
-      };
-      mmal_port_parameter_set(camera->control, &cam_config.hdr);
-   }
+        };
+        mmal_port_parameter_set(camera->control, &cam_config.hdr);
+    }
 
-   if (status != MMAL_SUCCESS)
-   {
-      vcos_log_error("camera viewfinder format couldn't be set");
-      goto error;
-   }
+    if (status != MMAL_SUCCESS)
+    {
+        vcos_log_error("camera viewfinder format couldn't be set");
+        goto error;
+    }
 
-   // Set the encode format on the video  port
+    // Set the encode format on the video  port
 
-   format = video_port->format;
+    format = video_port->format;
 
-   format->encoding = MMAL_ENCODING_I420;
-   format->encoding_variant = MMAL_ENCODING_I420;
+    format->encoding = MMAL_ENCODING_I420;
+    format->encoding_variant = MMAL_ENCODING_I420;
 
-   format->es->video.width = state->width;
-   format->es->video.height = state->height;
-   format->es->video.crop.x = 0;
-   format->es->video.crop.y = 0;
-   format->es->video.crop.width = state->width;
-   format->es->video.crop.height = state->height;
-   format->es->video.frame_rate.num = state->framerate;
-   format->es->video.frame_rate.den = VIDEO_FRAME_RATE_DEN;
+    format->es->video.width = state->width;
+    format->es->video.height = state->height;
+    format->es->video.crop.x = 0;
+    format->es->video.crop.y = 0;
+    format->es->video.crop.width = state->width;
+    format->es->video.crop.height = state->height;
+    format->es->video.frame_rate.num = state->framerate;
+    format->es->video.frame_rate.den = VIDEO_FRAME_RATE_DEN;
 
-   status = mmal_port_format_commit(video_port);
+    status = mmal_port_format_commit(video_port);
 
-   if (status != MMAL_SUCCESS)
-   {
-      vcos_log_error("camera video format couldn't be set");
-      goto error;
-   }
+    if (status != MMAL_SUCCESS)
+    {
+        vcos_log_error("camera video format couldn't be set");
+        goto error;
+    }
 
-   // Ensure there are enough buffers to avoid dropping frames
-   if (video_port->buffer_num < VIDEO_OUTPUT_BUFFERS_NUM)
-      video_port->buffer_num = VIDEO_OUTPUT_BUFFERS_NUM;
+    // Ensure there are enough buffers to avoid dropping frames
+    if (video_port->buffer_num < VIDEO_OUTPUT_BUFFERS_NUM)
+        video_port->buffer_num = VIDEO_OUTPUT_BUFFERS_NUM;
 
 
-   // Set the encode format on the still  port
+    // Set the encode format on the still  port
 
-   format = still_port->format;
+    format = still_port->format;
 
-   format->encoding = MMAL_ENCODING_OPAQUE;
-   format->encoding_variant = MMAL_ENCODING_I420;
+    format->encoding = MMAL_ENCODING_OPAQUE;
+    format->encoding_variant = MMAL_ENCODING_I420;
 
-   format->es->video.width = state->width;
-   format->es->video.height = state->height;
-   format->es->video.crop.x = 0;
-   format->es->video.crop.y = 0;
-   format->es->video.crop.width = state->width;
-   format->es->video.crop.height = state->height;
-   format->es->video.frame_rate.num = 1;
-   format->es->video.frame_rate.den = 1;
+    format->es->video.width = state->width;
+    format->es->video.height = state->height;
+    format->es->video.crop.x = 0;
+    format->es->video.crop.y = 0;
+    format->es->video.crop.width = state->width;
+    format->es->video.crop.height = state->height;
+    format->es->video.frame_rate.num = 1;
+    format->es->video.frame_rate.den = 1;
 
-   status = mmal_port_format_commit(still_port);
+    status = mmal_port_format_commit(still_port);
 
-   if (status != MMAL_SUCCESS)
-   {
-      vcos_log_error("camera still format couldn't be set");
-      goto error;
-   }
+    if (status != MMAL_SUCCESS)
+    {
+        vcos_log_error("camera still format couldn't be set");
+        goto error;
+    }
 
-   //PR : create pool of message on video port
-   MMAL_POOL_T *pool;
+    //PR : create pool of message on video port
+    MMAL_POOL_T *pool;
     // Make a buffer big enough for ARGB data to come back
-   video_port->buffer_size = video_port->buffer_size_recommended;
-   printf("Creating video port pool with %d buffers of size %d\n", video_port->buffer_num, video_port->buffer_size);
-   pool = mmal_port_pool_create(video_port, video_port->buffer_num, video_port->buffer_size);
-   if (!pool)
-   {
-      vcos_log_error("Failed to create buffer header pool for video output port");
-   }
-   state->video_pool = pool;
+    video_port->buffer_size = video_port->buffer_size_recommended;
+    printf("Creating video port pool with %d buffers of size %d\n", video_port->buffer_num, video_port->buffer_size);
+    pool = mmal_port_pool_create(video_port, video_port->buffer_num, video_port->buffer_size);
+    if (!pool)
+    {
+        vcos_log_error("Failed to create buffer header pool for video output port");
+    }
+    state->video_pool = pool;
 
-   /* Ensure there are enough buffers to avoid dropping frames */
-   if (still_port->buffer_num < VIDEO_OUTPUT_BUFFERS_NUM)
-      still_port->buffer_num = VIDEO_OUTPUT_BUFFERS_NUM;
+    /* Ensure there are enough buffers to avoid dropping frames */
+    if (still_port->buffer_num < VIDEO_OUTPUT_BUFFERS_NUM)
+        still_port->buffer_num = VIDEO_OUTPUT_BUFFERS_NUM;
 
-   /* Enable component */
-   status = mmal_component_enable(camera);
+    /* Enable component */
+    status = mmal_component_enable(camera);
 
-   if (status != MMAL_SUCCESS)
-   {
-      vcos_log_error("camera component couldn't be enabled");
-      goto error;
-   }
+    if (status != MMAL_SUCCESS)
+    {
+        vcos_log_error("camera component couldn't be enabled");
+        goto error;
+    }
 
-   state->camera_component = camera;
+    state->camera_component = camera;
 
-   if (state->verbose)
-      fprintf(stderr, "Camera component done\n");
+    if (state->verbose)
+        fprintf(stderr, "Camera component done\n");
 
-   return status;
+    return status;
 
 error:
 
-   if (camera)
-      mmal_component_destroy(camera);
+    if (camera)
+        mmal_component_destroy(camera);
 
-   return status;
+    return status;
 }
 
 /**
@@ -551,8 +550,8 @@ static void destroy_camera_component(RASPIVID_STATE *state)
 {
    if (state->camera_component)
    {
-      mmal_component_destroy(state->camera_component);
-      state->camera_component = NULL;
+        mmal_component_destroy(state->camera_component);
+        state->camera_component = NULL;
    }
 }
 
@@ -564,8 +563,8 @@ static void destroy_camera_component(RASPIVID_STATE *state)
  */
 static void check_disable_port(MMAL_PORT_T *port)
 {
-   if (port && port->is_enabled)
-      mmal_port_disable(port);
+    if (port && port->is_enabled)
+        mmal_port_disable(port);
 }
 
 /**
@@ -578,14 +577,14 @@ static void signal_handler(int signal_number)
 {
    if (signal_number == SIGUSR1)
    {
-      // Handle but ignore - prevents us dropping out if started in none-signal mode
-      // and someone sends us the USR1 signal anyway
+        // Handle but ignore - prevents us dropping out if started in none-signal mode
+        // and someone sends us the USR1 signal anyway
    }
    else
    {
-      // Going to abort on all other signals
-      vcos_log_error("Aborting program\n");
-      exit(130);
+        // Going to abort on all other signals
+        vcos_log_error("Aborting program\n");
+        exit(130);
    }
 
 }
@@ -597,154 +596,153 @@ static void signal_handler(int signal_number)
 int ledmirror_run()
 {
    
-   if (!bcm2835_init())
-      return -1;
+    if (!bcm2835_init())
+        return -1;
 
-   bcm2835_gpio_fsel(RST, BCM2835_GPIO_FSEL_OUTP);
+    bcm2835_gpio_fsel(RST, BCM2835_GPIO_FSEL_OUTP);
 
-   bcm2835_spi_begin();
-   bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      // The default
-   bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   // The default
-   bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_256);    // The default //64
-   bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                      // The default
-   bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);      // the default
+    bcm2835_spi_begin();
+    bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      // The default
+    bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   // The default
+    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_256);    // The default //64
+    bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                      // The default
+    bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);      // the default
 
-   bcm2835_gpio_write(RST, HIGH);
-   usleep(5000);
-   bcm2835_gpio_write(RST, LOW);
-   usleep(5000);
-   bcm2835_gpio_write(RST, HIGH);
-   //usleep(2000);
-   framecounter = 0;
-   //test
-   //Panel Configuration Register
-   char output_buffer[2];
-   output_buffer[0] = 0x0D;
-   output_buffer[1] = 0x81;
-   bcm2835_spi_transfern(&output_buffer[0], 2);
-   
-   //Panel Intensity Register
-   output_buffer[0] = 0x02;
-   output_buffer[1] = 0x30;
-   bcm2835_spi_transfern(&output_buffer[0], 2);
-    
-   //Number of Cascaded Devices Register  
-   output_buffer[0] = 0x0e;
-   output_buffer[1] = 0x0F;
-   bcm2835_spi_transfern(&output_buffer[0], 2);
-   
-   //Number of Display Rows Register  
-   output_buffer[0] = 0x0f;
-   output_buffer[1] = 0x00;
-   bcm2835_spi_transfern(&output_buffer[0], 2);
+    bcm2835_gpio_write(RST, HIGH);
+    usleep(5000);
+    bcm2835_gpio_write(RST, LOW);
+    usleep(5000);
+    bcm2835_gpio_write(RST, HIGH);
 
-   usleep(500000);
-    
-   // Our main data storage vessel..
-   RASPIVID_STATE state;
-   int exit_code = EX_OK;
+    framecounter = 0;
 
-   MMAL_STATUS_T status = MMAL_SUCCESS;
-   MMAL_PORT_T *camera_video_port = NULL;
-   MMAL_PORT_T *camera_still_port = NULL;
+    //Panel Configuration Register
+    char output_buffer[2];
+    output_buffer[0] = 0x0D;
+    output_buffer[1] = 0x81;
+    bcm2835_spi_transfern(&output_buffer[0], 2);
 
-   bcm_host_init();
+    //Panel Intensity Register
+    output_buffer[0] = 0x02;
+    output_buffer[1] = 0x30;
+    bcm2835_spi_transfern(&output_buffer[0], 2);
 
-   // Register our application with the logging system
-   vcos_log_register("RaspiVid", VCOS_LOG_CATEGORY);
+    //Number of Cascaded Devices Register  
+    output_buffer[0] = 0x0e;
+    output_buffer[1] = 0x0F;
+    bcm2835_spi_transfern(&output_buffer[0], 2);
 
-   signal(SIGINT, signal_handler);
+    //Number of Display Rows Register  
+    output_buffer[0] = 0x0f;
+    output_buffer[1] = 0x00;
+    bcm2835_spi_transfern(&output_buffer[0], 2);
 
-   // Disable USR1 for the moment - may be reenabled if go in to signal capture mode
-   signal(SIGUSR1, SIG_IGN);
+    usleep(500000);
 
-   default_status(&state);
+    // Our main data storage vessel..
+    RASPIVID_STATE state;
+    int exit_code = EX_OK;
 
-   // OK, we have a nice set of parameters. Now set up our components
-   // We have three components. Camera, Preview and encoder.
+    MMAL_STATUS_T status = MMAL_SUCCESS;
+    MMAL_PORT_T *camera_video_port = NULL;
+    MMAL_PORT_T *camera_still_port = NULL;
 
-   if ((status = create_camera_component(&state)) != MMAL_SUCCESS)
-   {
-      vcos_log_error("%s: Failed to create camera component", __func__);
-      exit_code = EX_SOFTWARE;
-   }else{
-      if (state.verbose)
-         fprintf(stderr, "Starting component connection stage\n");
+    bcm_host_init();
 
-      camera_video_port   = state.camera_component->output[MMAL_CAMERA_VIDEO_PORT];
-      camera_still_port   = state.camera_component->output[MMAL_CAMERA_CAPTURE_PORT];
+    // Register our application with the logging system
+    vcos_log_register("RaspiVid", VCOS_LOG_CATEGORY);
 
-      if (1)
-      {
-         if (state.verbose)
-            fprintf(stderr, "Connecting camera stills port to encoder input port\n");
+    signal(SIGINT, signal_handler);
 
-         // Set up our userdata - this is passed though to the callback where we need the information.
-         state.callback_data.pstate = &state;
-         state.callback_data.abort = 0;
-         camera_video_port->userdata = (struct MMAL_PORT_USERDATA_T *)&state.callback_data;
+    // Disable USR1 for the moment - may be reenabled if go in to signal capture mode
+    signal(SIGUSR1, SIG_IGN);
 
-       //setup the video buffer callback
-         status = mmal_port_enable(camera_video_port, video_buffer_callback);
-         if (status != MMAL_SUCCESS)
-         {
-            vcos_log_error("Failed to setup video buffer callback");
-            goto error;
-         }
+    default_status(&state);
 
-        // Send all the buffers to the vide output port
+    // OK, we have a nice set of parameters. Now set up our components
+    // We have three components. Camera, Preview and encoder.
+
+    if ((status = create_camera_component(&state)) != MMAL_SUCCESS)
+    {
+        vcos_log_error("%s: Failed to create camera component", __func__);
+        exit_code = EX_SOFTWARE;
+    }else{
+
+        if (state.verbose)
+            fprintf(stderr, "Starting component connection stage\n");
+
+        camera_video_port   = state.camera_component->output[MMAL_CAMERA_VIDEO_PORT];
+        camera_still_port   = state.camera_component->output[MMAL_CAMERA_CAPTURE_PORT];
+
+        if (1)
         {
-            int num = mmal_queue_length(state.video_pool->queue);
-            int q;
-            for (q=0;q<num;q++)
+            if (state.verbose)
+                fprintf(stderr, "Connecting camera stills port to encoder input port\n");
+
+            // Set up our userdata - this is passed though to the callback where we need the information.
+            state.callback_data.pstate = &state;
+            state.callback_data.abort = 0;
+            camera_video_port->userdata = (struct MMAL_PORT_USERDATA_T *)&state.callback_data;
+
+            //setup the video buffer callback
+            status = mmal_port_enable(camera_video_port, video_buffer_callback);
+            if (status != MMAL_SUCCESS)
             {
-                MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(state.video_pool->queue);
-
-               if (!buffer){
-                   vcos_log_error("Unable to get a required buffer %d from pool queue", q);
-               }
-
-               if (mmal_port_send_buffer(camera_video_port, buffer)!= MMAL_SUCCESS){
-                   vcos_log_error("Unable to send a buffer to encoder output port (%d)", q);
-               }
-
+                vcos_log_error("Failed to setup video buffer callback");
+                goto error;
             }
+
+            // Send all the buffers to the vide output port
+            {
+                int num = mmal_queue_length(state.video_pool->queue);
+                int q;
+                for (q=0;q<num;q++)
+                {
+                    MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(state.video_pool->queue);
+
+                    if (!buffer){
+                        vcos_log_error("Unable to get a required buffer %d from pool queue", q);
+                    }
+
+                    if (mmal_port_send_buffer(camera_video_port, buffer)!= MMAL_SUCCESS){
+                        vcos_log_error("Unable to send a buffer to encoder output port (%d)", q);
+                    }
+
+                }
+            }
+
+            //begin capture
+            if (mmal_port_parameter_set_boolean(camera_video_port, MMAL_PARAMETER_CAPTURE, 1) != MMAL_SUCCESS)
+            {
+                printf("Failed to start capture\n");
+                goto error;
+            }
+            vcos_sleep(state.timeout);
+
+        }else{
+            vcos_log_error("%s: Failed to connect camera to preview", __func__);
         }
 
-      //begin capture
-      if (mmal_port_parameter_set_boolean(camera_video_port, MMAL_PARAMETER_CAPTURE, 1) != MMAL_SUCCESS)
-      {
-         printf("Failed to start capture\n");
-         goto error;
-      }
-         vcos_sleep(state.timeout);
- 
-      }
-      else
-      {
-         vcos_log_error("%s: Failed to connect camera to preview", __func__);
-      }
+    error:
 
-error:
+        if (state.verbose)
+            fprintf(stderr, "Closing down\n");
 
-      if (state.verbose)
-         fprintf(stderr, "Closing down\n");
+        // Disable all our ports that are not handled by connections
+        check_disable_port(camera_still_port);
 
-      // Disable all our ports that are not handled by connections
-      check_disable_port(camera_still_port);
+        if (state.camera_component)
+            mmal_component_disable(state.camera_component);
 
-      if (state.camera_component)
-         mmal_component_disable(state.camera_component);
+        destroy_camera_component(&state);
 
-      destroy_camera_component(&state);
+        if (state.verbose)
+            fprintf(stderr, "Close down completed, all components disconnected, disabled and destroyed\n\n");
+    }
 
-      if (state.verbose)
-         fprintf(stderr, "Close down completed, all components disconnected, disabled and destroyed\n\n");
-   }
+    bcm2835_spi_end();
+    bcm2835_close();
 
-   bcm2835_spi_end();
-   bcm2835_close();
-
-   return exit_code;
+    return exit_code;
 }
 

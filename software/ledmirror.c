@@ -813,7 +813,8 @@ static void signal_handler(int signal_number)
 /**
  * main
  */
-int main(int argc, const char **argv)
+//int main(int argc, const char **argv)
+int ledmirror_run()
 {
    
    if (!bcm2835_init())

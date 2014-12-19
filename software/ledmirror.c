@@ -372,7 +372,57 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 
 }
 
+static void clear(){
+   //test pixel loop
+   int i;
+   int j = 0;
+   int realimagewidth = 32;
+   int rowcount = 0;
+   for(i=0; i < 2*(imagewidth*imageheight/4); i++){
+     int p4 = 0;
+     int p3 = 0;
+     int p2 = 0;
+     int p1 = 0;
+     int packed_4_pix = pack(p1,p2,p3,p4);
+
+     char output_buffer2[3];
+     output_buffer2[0] = 0x00;
+     output_buffer2[1] = i;
+     output_buffer2[2] = packed_4_pix;
+     bcm2835_spi_transfern(&output_buffer2[0], 3);
+
+     if (i%imagewidth == (imagewidth-1)){
+        j = j + realimagewidth*4;
+        rowcount ++;
+     }
+   }
+
+   for(i=0; i < 2*(imagewidth*imageheight/4); i++){
+     int p4 = 0;
+     int p3 = 0;
+     int p2 = 0;
+     int p1 = 0;
+     int packed_4_pix = pack(p1,p2,p3,p4);
+
+     char output_buffer2[3];
+     output_buffer2[0] = 0x01;
+     output_buffer2[1] = i;
+     output_buffer2[2] = packed_4_pix;
+     bcm2835_spi_transfern(&output_buffer2[0], 3);
+
+     if (i%imagewidth == (imagewidth-1)){
+        j = j + realimagewidth*4;
+        rowcount ++;
+     }
+   }
+
+   printf("total rows %u\n",rowcount);
+}
+
 static void displayImage(int *pixelstodraw){
+
+  //clear();
+
   int i = 0;
   for(i=0; i<20;i++){
 
@@ -394,19 +444,46 @@ static void displayImage(int *pixelstodraw){
     output_buffer2[1] = pixellookup[pixelstodraw[i]][1];
     output_buffer2[2] = prev_packed_4_pix | packed_4_pix;
     spi_transferOverlay(&output_buffer2[0], &display_buffer[0],  index);
+
   }
   
 }
 
 static void test_ImageDraw(){
+
     int offset = framecounter * 32;
     int xoffset = framecounter%32-15; 
+
     memset(overlayData, 0, 512*sizeof(*overlayData));
-    int image[20] = {15 + offset + xoffset, 16 + offset+ xoffset, 47 + offset+ xoffset, 48+ offset+ xoffset, 77+ offset+ xoffset,78+ offset+ xoffset,79+ offset+ xoffset,80+ offset+ xoffset,81+ offset+ xoffset,82+ offset+ xoffset, 109+ offset+ xoffset,110+ offset+ xoffset,111+ offset+ xoffset,112+ offset+ xoffset,113+ offset+ xoffset,114+ offset+ xoffset, 143+ offset+ xoffset,144+ offset+ xoffset,175+ offset+ xoffset,176 + offset+ xoffset};
+    int image[20] = { 15 + offset + xoffset, 
+                      16 + offset + xoffset, 
+                      47 + offset + xoffset, 
+                      48 + offset + xoffset, 
+                      77 + offset + xoffset,
+                      78 + offset + xoffset,
+                      79 + offset + xoffset,
+                      80 + offset + xoffset,
+                      81 + offset + xoffset,
+                      82 + offset + xoffset, 
+                      109 + offset + xoffset,
+                      110 + offset + xoffset,
+                      111 + offset + xoffset,
+                      112 + offset + xoffset,
+                      113 + offset + xoffset,
+                      114 + offset + xoffset, 
+                      143 + offset + xoffset,
+                      144 + offset + xoffset,
+                      175 + offset + xoffset,
+                      176 + offset + xoffset };
+
     if (framecounter*32 > 1900){
       framecounter = 0;
     }
+
     displayImage(image);
+
+    
+
 }
 
 static void testLeds(){
@@ -460,52 +537,6 @@ static void testLeds(){
    
 }
 
-static void clear(){
-   //test pixel loop
-   int i;
-   int j = 0;
-   int realimagewidth = 32;
-   int rowcount = 0;
-   for(i=0; i < 2*(imagewidth*imageheight/4); i++){
-     int p4 = 0;
-     int p3 = 0;
-     int p2 = 0;
-     int p1 = 0;
-     int packed_4_pix = pack(p1,p2,p3,p4);
-
-     char output_buffer2[3];
-     output_buffer2[0] = 0x00;
-     output_buffer2[1] = i;
-     output_buffer2[2] = packed_4_pix;
-     bcm2835_spi_transfern(&output_buffer2[0], 3);
-
-     if (i%imagewidth == (imagewidth-1)){
-        j = j + realimagewidth*4;
-        rowcount ++;
-     }
-   }
-
-   for(i=0; i < 2*(imagewidth*imageheight/4); i++){
-     int p4 = 0;
-     int p3 = 0;
-     int p2 = 0;
-     int p1 = 0;
-     int packed_4_pix = pack(p1,p2,p3,p4);
-
-     char output_buffer2[3];
-     output_buffer2[0] = 0x01;
-     output_buffer2[1] = i;
-     output_buffer2[2] = packed_4_pix;
-     bcm2835_spi_transfern(&output_buffer2[0], 3);
-
-     if (i%imagewidth == (imagewidth-1)){
-        j = j + realimagewidth*4;
-        rowcount ++;
-     }
-   }
-
-   printf("total rows %u\n",rowcount);
-}
 
 /**
  *  buffer header callback function for vieo
@@ -531,8 +562,8 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
       {
          mmal_buffer_header_mem_lock(buffer);
          pData->pstate->framescaptured++;
-         renderVid(port,buffer);
          test_ImageDraw();
+         renderVid(port,buffer);
          framecounter += 1;
          //testLeds();
          //clear();

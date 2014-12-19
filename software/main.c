@@ -1,6 +1,21 @@
 #include "ledmirror.h"
 #include "utils.h"
 
+int quantize(int level)
+{
+   int output_pixel;
+   if(level < 50){
+      output_pixel = 0;
+   }else if(level < 150){
+      output_pixel = 1;
+   }else if(level < 220){
+      output_pixel = 2;
+   }else{
+      output_pixel = 3;
+   }
+   return output_pixel;
+}
+
 void test_ImageDraw(int framecounter){
 
     int frc = framecounter%(1900/32);

@@ -205,21 +205,6 @@ static void camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
    mmal_buffer_header_release(buffer);
 }
 
-static int quantize(int level)
-{
-   int output_pixel;
-   if(level < 50){
-      output_pixel = 0;
-   }else if(level < 150){
-      output_pixel = 1;
-   }else if(level < 220){
-      output_pixel = 2;
-   }else{
-      output_pixel = 3;
-   }
-   return output_pixel;
-}
-
 int pack(int p1,int p2,int p3,int p4){
 
    int pixel_1 = quantize(p1) << 6;

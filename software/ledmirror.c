@@ -121,7 +121,6 @@ const int imageheight = 32;
 
 unsigned char videoData[512];
 unsigned char overlayData[512];
-unsigned int framecounter;
 
 static void signal_handler(int signal_number);
 
@@ -342,9 +341,8 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
 
             //clear the overlay buffer
             memset(overlayData, 0, 512*sizeof(*overlayData)); 
-            test_ImageDraw(framecounter);
+            videoFrameDidRender(pData->pstate->framescaptured);
             renderVid(port,buffer);
-            framecounter += 1;
 
             mmal_buffer_header_mem_unlock(buffer);
         }
@@ -613,8 +611,6 @@ int ledmirror_run()
     bcm2835_gpio_write(RST, LOW);
     usleep(5000);
     bcm2835_gpio_write(RST, HIGH);
-
-    framecounter = 0;
 
     //Panel Configuration Register
     char output_buffer[2];

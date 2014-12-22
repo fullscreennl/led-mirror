@@ -16,7 +16,7 @@ int quantize(int level)
     return output_pixel;
 }
 
-void test_ImageDraw(int framecounter){
+void videoFrameDidRender(int framecounter){
 
     int frc = framecounter%(1900/32);
 

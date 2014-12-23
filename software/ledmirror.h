@@ -4,7 +4,8 @@
 extern const int imagewidth;
 extern const int imageheight;
 
-void displayImage(unsigned int *pixelstodraw, int length);
+void displayImage(unsigned int *pixelstodraw);
+void setDisplayVideo(int shouldDisplay);
 int ledmirror_run();
 int pack(int p1,int p2,int p3,int p4);
 

@@ -120,7 +120,7 @@ const int imagewidth = 16;
 const int imageheight = 32;
 
 unsigned int *overlayPixels;
-int numOverlayPixels;
+int displayVideo;
 
 static void signal_handler(int signal_number);
 
@@ -222,11 +222,15 @@ static void spi_transferVideo(char *buffer,int index){
 static int pixelForIndex(int rawIndex, int videopixel){
     int y = floor(rawIndex/captureSize);
     int x = rawIndex%captureSize - 16;
-    int index = y*32+x;
+    int index = y*32+x-1;
     int pixel = overlayPixels[index];
     if(pixel == 0){
+        if(!displayVideo){
+            return 0;
+        }    
         return videopixel;
     }
+
     return pixel;
 }
 
@@ -296,9 +300,12 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 }
 
 
-void displayImage(unsigned int *pixelstodraw, int length){
+void setDisplayVideo(int shouldDisplay){
+    displayVideo = shouldDisplay;
+}
+
+void displayImage(unsigned int *pixelstodraw){
     overlayPixels = pixelstodraw;
-    numOverlayPixels = length;
 }
 
 
@@ -582,6 +589,8 @@ int ledmirror_run()
    
     if (!bcm2835_init())
         return -1;
+
+    displayVideo = 1;
 
     bcm2835_gpio_fsel(RST, BCM2835_GPIO_FSEL_OUTP);
 

@@ -16,60 +16,52 @@ int quantize(int level)
     return output_pixel;
 }
 
+
 void videoFrameDidRender(int framecounter){
 
+    if(framecounter > 300){
+        setDisplayVideo(0);
+    }
     int frc = framecounter%(1900/32);
 
     int offset = frc * 32;
     int xoffset = frc%32-15; 
-    
-    unsigned int image[2048] = {0};
    
-    image[15 + offset + xoffset] = 1; 
-    image[16 + offset + xoffset] = 1;
-    image[47 + offset + xoffset] = 1; 
-    image[48 + offset + xoffset] = 1; 
-    image[77 + offset + xoffset] = 1;
-    image[78 + offset + xoffset] = 1;
-    image[79 + offset + xoffset] = 1;
-    image[80 + offset + xoffset] = 1;
-    image[81 + offset + xoffset] = 1;
-    image[82 + offset + xoffset] = 1; 
-    image[109 + offset + xoffset] = 1;
-    image[110 + offset + xoffset] = 1;
-    image[111 + offset + xoffset] = 1;
-    image[112 + offset + xoffset] = 1;
-    image[113 + offset + xoffset] = 1;
-    image[114 + offset + xoffset] = 1; 
-    image[143 + offset + xoffset] = 1;
-    image[144 + offset + xoffset] = 1;
-    image[175 + offset + xoffset] = 1;
-    image[176 + offset + xoffset] = 1; 
 
-    /**
-    int image[20] = { 15 + offset + xoffset, 
-                    16 + offset + xoffset, 
-                    47 + offset + xoffset, 
-                    48 + offset + xoffset, 
-                    77 + offset + xoffset,
-                    78 + offset + xoffset,
-                    79 + offset + xoffset,
-                    80 + offset + xoffset,
-                    81 + offset + xoffset,
-                    82 + offset + xoffset, 
-                    109 + offset + xoffset,
-                    110 + offset + xoffset,
-                    111 + offset + xoffset,
-                    112 + offset + xoffset,
-                    113 + offset + xoffset,
-                    114 + offset + xoffset, 
-                    143 + offset + xoffset,
-                    144 + offset + xoffset,
-                    175 + offset + xoffset,
-                    176 + offset + xoffset };
-    */
+    //offset = 100;
+    //xoffset = 100;
 
-    displayImage(image,NELEMS(image));
+    static unsigned int image[2048];
+    
+    int i;
+    for (i=0; i<2048; i++){
+        image[i] = 0;
+    }
+
+    int pixvalue = 151;
+
+    image[15 + offset + xoffset] = pixvalue; 
+    image[16 + offset + xoffset] = pixvalue;
+    image[47 + offset + xoffset] = pixvalue; 
+    image[48 + offset + xoffset] = pixvalue; 
+    image[77 + offset + xoffset] = pixvalue;
+    image[78 + offset + xoffset] = pixvalue;
+    image[79 + offset + xoffset] = pixvalue;
+    image[80 + offset + xoffset] = pixvalue;
+    image[81 + offset + xoffset] = pixvalue;
+    image[82 + offset + xoffset] = pixvalue; 
+    image[109 + offset + xoffset] = pixvalue;
+    image[110 + offset + xoffset] = pixvalue;
+    image[111 + offset + xoffset] = pixvalue;
+    image[112 + offset + xoffset] = pixvalue;
+    image[113 + offset + xoffset] = pixvalue;
+    image[114 + offset + xoffset] = pixvalue; 
+    image[143 + offset + xoffset] = pixvalue;
+    image[144 + offset + xoffset] = pixvalue;
+    image[175 + offset + xoffset] = pixvalue;
+    image[176 + offset + xoffset] = pixvalue; 
+    
+    displayImage(image);
 
 }
 

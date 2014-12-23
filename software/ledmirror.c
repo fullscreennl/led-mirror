@@ -122,6 +122,9 @@ const int imageheight = 32;
 unsigned char videoData[512];
 unsigned char overlayData[512];
 
+int *overlayPixels;
+int numOverlayPixels;
+
 static void signal_handler(int signal_number);
 
 // Forward
@@ -224,6 +227,18 @@ static void spi_transferVideo(char *buffer,int index){
     bcm2835_spi_transfern(&buffer[0], 3);
 }
 
+//merge the overlay data onto the videoframe
+static int pixelForIndex(int rawIndex, int videopixel){
+    int y = floor(rawIndex/captureSize);
+    int x = rawIndex%captureSize - 16;
+    int index = y*32+x;
+    int pixel = overlayPixels[index];
+    if(pixel == 0){
+        return videopixel;
+    }
+    return pixel;
+}
+
 static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, int xOffset,int section){
     
     int i;
@@ -244,20 +259,27 @@ static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, in
     j = 0;
     rowcount = 0;
     for(i=0; i < (imagewidth*imageheight/4); i++){
+            
             int z = (16 - (i%imagewidth)) + top_padding + 16;
-            int p4 = buffer->data[(z)+j+xOffset];
-            int p3 = buffer->data[(z)+j+realimagewidth+xOffset];
-            int p2 = buffer->data[(z)+j+realimagewidth*2+xOffset];
-            int p1 = buffer->data[(z)+j+realimagewidth*3+xOffset];
+            
+            int ind = (z)+j+xOffset;
+            int p4 = pixelForIndex(ind, buffer->data[ind]);
 
-            int prev_packed_4_pix = overlayData[i+sectionPadding+clusterIndexPadding];
+            ind = (z)+j+realimagewidth+xOffset;
+            int p3 = pixelForIndex(ind, buffer->data[ind]);
+
+            ind = (z)+j+realimagewidth*2+xOffset;
+            int p2 = pixelForIndex(ind, buffer->data[ind]);
+
+            ind = (z)+j+realimagewidth*3+xOffset; 
+            int p1 = pixelForIndex(ind, buffer->data[ind]);
+
             int packed_4_pix = pack(p1,p2,p3,p4);
-            int combined = prev_packed_4_pix | packed_4_pix;
 
             char output_buffer2[3];
             output_buffer2[0] = section;
             output_buffer2[1] = i+clusterIndexPadding;
-            output_buffer2[2] = combined;
+            output_buffer2[2] = packed_4_pix;
             spi_transferVideo(&output_buffer2[0], section * 256 + output_buffer2[1]);
 
             if (i%imagewidth == (imagewidth-1)){
@@ -287,6 +309,11 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 
 void displayImage(int *pixelstodraw, int length){
 
+    
+    overlayPixels = pixelstodraw;
+    numOverlayPixels = length;
+
+    /**
     int i = 0;
     for(i=0; i<length;i++){
 
@@ -310,7 +337,7 @@ void displayImage(int *pixelstodraw, int length){
         spi_transferOverlay(&output_buffer2[0], &display_buffer[0],  index);
 
     }
-  
+  */
 }
 
 

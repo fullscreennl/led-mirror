@@ -22,7 +22,31 @@ void videoFrameDidRender(int framecounter){
 
     int offset = frc * 32;
     int xoffset = frc%32-15; 
+    
+    unsigned int image[2048] = {0};
+   
+    image[15 + offset + xoffset] = 1; 
+    image[16 + offset + xoffset] = 1;
+    image[47 + offset + xoffset] = 1; 
+    image[48 + offset + xoffset] = 1; 
+    image[77 + offset + xoffset] = 1;
+    image[78 + offset + xoffset] = 1;
+    image[79 + offset + xoffset] = 1;
+    image[80 + offset + xoffset] = 1;
+    image[81 + offset + xoffset] = 1;
+    image[82 + offset + xoffset] = 1; 
+    image[109 + offset + xoffset] = 1;
+    image[110 + offset + xoffset] = 1;
+    image[111 + offset + xoffset] = 1;
+    image[112 + offset + xoffset] = 1;
+    image[113 + offset + xoffset] = 1;
+    image[114 + offset + xoffset] = 1; 
+    image[143 + offset + xoffset] = 1;
+    image[144 + offset + xoffset] = 1;
+    image[175 + offset + xoffset] = 1;
+    image[176 + offset + xoffset] = 1; 
 
+    /**
     int image[20] = { 15 + offset + xoffset, 
                     16 + offset + xoffset, 
                     47 + offset + xoffset, 
@@ -43,6 +67,7 @@ void videoFrameDidRender(int framecounter){
                     144 + offset + xoffset,
                     175 + offset + xoffset,
                     176 + offset + xoffset };
+    */
 
     displayImage(image,NELEMS(image));
 

@@ -119,10 +119,7 @@ const int captureSize = 64;
 const int imagewidth = 16;
 const int imageheight = 32;
 
-unsigned char videoData[512];
-unsigned char overlayData[512];
-
-int *overlayPixels;
+unsigned int *overlayPixels;
 int numOverlayPixels;
 
 static void signal_handler(int signal_number);
@@ -217,13 +214,7 @@ int pack(int p1,int p2,int p3,int p4){
 
 }
 
-static void spi_transferOverlay(char *buffer, char *displaybuffer,int index){
-    overlayData[index] = buffer[2];
-    bcm2835_spi_transfern(&displaybuffer[0], 3);
-}
-
 static void spi_transferVideo(char *buffer,int index){
-    videoData[index] = buffer[2];
     bcm2835_spi_transfern(&buffer[0], 3);
 }
 
@@ -245,7 +236,6 @@ static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, in
     int j = 0;
     int realimagewidth = captureSize;
     int rowcount = 0;
-    int sectionPadding = 0;
     int clusterIndexPadding = imagewidth * imageheight/4;  
     int top_padding = (captureSize - 2*imageheight) * 64;
     if(xOffset > 0){
@@ -253,7 +243,6 @@ static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, in
     }
     if(section == 0x01){
         top_padding = ((captureSize - 2*imageheight) + imageheight) * 64;
-        sectionPadding = 256;
     }
     
     j = 0;
@@ -307,37 +296,9 @@ static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
 }
 
 
-void displayImage(int *pixelstodraw, int length){
-
-    
+void displayImage(unsigned int *pixelstodraw, int length){
     overlayPixels = pixelstodraw;
     numOverlayPixels = length;
-
-    /**
-    int i = 0;
-    for(i=0; i<length;i++){
-
-        int index = pixellookup[pixelstodraw[i]][1] + pixellookup[pixelstodraw[i]][0] * 256;
-        int prev_packed_4_pix = overlayData[index];
-        int prev_packed_video_pix = videoData[index];
-        int subcombined = prev_packed_4_pix | prev_packed_video_pix;
-        int packed_4_pix = 3<<pixellookup[pixelstodraw[i]][2]*2;
-
-        int combined = subcombined | packed_4_pix;
-
-        char display_buffer[3];
-        display_buffer[0] = pixellookup[pixelstodraw[i]][0];
-        display_buffer[1] = pixellookup[pixelstodraw[i]][1];
-        display_buffer[2] = combined;
-
-        char output_buffer2[3];
-        output_buffer2[0] = pixellookup[pixelstodraw[i]][0];
-        output_buffer2[1] = pixellookup[pixelstodraw[i]][1];
-        output_buffer2[2] = prev_packed_4_pix | packed_4_pix;
-        spi_transferOverlay(&output_buffer2[0], &display_buffer[0],  index);
-
-    }
-  */
 }
 
 
@@ -366,8 +327,6 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
             mmal_buffer_header_mem_lock(buffer);
             pData->pstate->framescaptured++;
 
-            //clear the overlay buffer
-            memset(overlayData, 0, 512*sizeof(*overlayData)); 
             videoFrameDidRender(pData->pstate->framescaptured);
             renderVid(port,buffer);
 

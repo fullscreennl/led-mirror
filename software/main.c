@@ -1,5 +1,9 @@
 #include "ledmirror.h"
 #include "utils.h"
+#include "animation.h"
+
+static int mycounter = 0;
+
 
 int quantize(int level)
 {
@@ -20,19 +24,15 @@ int quantize(int level)
 void videoFrameDidRender(int framecounter){
 
     if(framecounter > 300){
-        setDisplayVideo(0);
+        //setDisplayVideo(0);
     }
-    int frc = framecounter%(1900/32);
 
+    /* 
+    int frc = framecounter%(1900/32);
     int offset = frc * 32;
     int xoffset = frc%32-15; 
    
-
-    //offset = 100;
-    //xoffset = 100;
-
-    static unsigned int image[2048];
-    
+    static unsigned image[2048] = {0};
     int i;
     for (i=0; i<2048; i++){
         image[i] = 0;
@@ -60,8 +60,41 @@ void videoFrameDidRender(int framecounter){
     image[144 + offset + xoffset] = pixvalue;
     image[175 + offset + xoffset] = pixvalue;
     image[176 + offset + xoffset] = pixvalue; 
-    
-    displayImage(image);
+    */
+        
+    static unsigned clearframe[2048] = {0};
+
+    if(framecounter%15 == 0 && mycounter < 11){
+        mycounter ++;
+    }
+
+    if(framecounter%300 == 0 && mycounter < 13){
+        mycounter ++;
+    }
+
+    if(mycounter >= 13){
+        mycounter = 0;
+    }
+
+
+    void *frames[14];
+
+    frames[0] = frame1;
+    frames[1] = clearframe;
+    frames[2] = frame2;
+    frames[3] = clearframe;
+    frames[4] = frame3;
+    frames[5] = clearframe;
+    frames[6] = frame4;
+    frames[7] = clearframe;
+    frames[8] = frame5;
+    frames[9] = clearframe;
+    frames[10] = frame6;
+    frames[11] = clearframe;
+    frames[12] = frame7;
+    frames[13] = clearframe;
+
+    displayImage(frames[mycounter]);
 
 }
 

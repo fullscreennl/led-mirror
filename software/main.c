@@ -9,7 +9,8 @@
 #define RECORDING_LENGTH 150
 #define BUFFER_SIZE 6144
 
-static int mycounter = 0;
+int loopingClock = 0;
+int countDownClock = 0;
 
 static void *recordedBuffers[RECORDING_LENGTH];
 int recordedCounter = 0;
@@ -21,7 +22,7 @@ int quantize(int level)
         output_pixel = 0;
     }else if(level < 150){
         output_pixel = 1;
-    }else if(level < 220){
+    }else if(level < 200){
         output_pixel = 2;
     }else{
         output_pixel = 3;
@@ -39,25 +40,18 @@ void createRecordingBuffer(){
 }
 
 void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
-    if(framecounter < RECORDING_LENGTH){
+    
+    if(recordedCounter < RECORDING_LENGTH && loopingClock > 166){
         memcpy(recordedBuffers[recordedCounter],buffer->data,BUFFER_SIZE); 
         recordedCounter ++;
     }
 
-    if(framecounter == 150){
-        for (i=0; i<2048; i++){
-            fr[i] = 1;
-        }
-        displayImage(fr);
-    }    
-
-    if(framecounter == 153){
+    if(loopingClock == 300){
         setDisplayMode(displayModePlayback);
     }
 
-    if(framecounter > 180){
-        playbackFrame(recordedBuffers[framecounter%149]);        
-        printf("playback frame %i\n",framecounter%149);
+    if(loopingClock > 300){
+        playbackFrame(recordedBuffers[loopingClock%(RECORDING_LENGTH-1)]);        
     }
 
 }
@@ -65,21 +59,22 @@ void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
 
 void videoFrameWillRender(int framecounter){
 
+    loopingClock ++;
+    
     static unsigned clearframe[2048] = {0};
 
-    if(framecounter%15 == 0 && mycounter < 11){
-        mycounter ++;
+    if(loopingClock%15 == 0 && countDownClock < 11){
+        countDownClock ++;
     }
 
-    if(framecounter%300 == 0 && mycounter < 13){
-        mycounter ++;
+    if(loopingClock == 600){
+        setDisplayMode(displayModeVideoAndOverlay);
+        loopingClock = 0;
+        countDownClock = 0;
+        recordedCounter = 0;
     }
-
-    if(mycounter >= 13){
-        mycounter = 0;
-    }
-
-    void *frames[14];
+    
+    void *frames[12];
 
     frames[0] = frame1;
     frames[1] = clearframe;
@@ -93,10 +88,8 @@ void videoFrameWillRender(int framecounter){
     frames[9] = clearframe;
     frames[10] = frame6;
     frames[11] = clearframe;
-    frames[12] = frame7;
-    frames[13] = clearframe;
 
-    displayImage(frames[mycounter]);
+    displayImage(frames[countDownClock]);
 
 }
 

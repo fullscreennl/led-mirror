@@ -1,6 +1,5 @@
 //This is a modified version of CAMVC.C - http://www.cheerfulprogrammer.com/downloads/camcv.c
 
-//Info using spi - http://www.raspberry-projects.com/pi/programming-in-c/spi/using-the-spi-interface
 
 /*MODIFIED RASPIVID TO CAMCV.C
 This is just a very stripped down version of raspivid (copy right info below), combined with some work from Pierre Raufast, specifically http://raufast.org/download/camcv_vid0.c. 
@@ -120,7 +119,7 @@ const int imagewidth = 16;
 const int imageheight = 32;
 
 unsigned int *overlayPixels;
-int displayVideo;
+DisplayMode displayMode;
 
 static void signal_handler(int signal_number);
 
@@ -219,13 +218,13 @@ static void spi_transferVideo(char *buffer,int index){
 }
 
 //merge the overlay data onto the videoframe
-static int pixelForIndex(int rawIndex, int videopixel){
+static int pixelForIndex(int rawIndex,int videopixel){
     int y = floor(rawIndex/captureSize);
     int x = rawIndex%captureSize - 16;
     int index = y*32+x-1;
     int pixel = overlayPixels[index];
     if(pixel == 0){
-        if(!displayVideo){
+        if(displayMode == displayModeOverlay){
             return 0;
         }    
         return videopixel;
@@ -234,7 +233,7 @@ static int pixelForIndex(int rawIndex, int videopixel){
     return pixel;
 }
 
-static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, int xOffset,int section){
+static void renderVidSection(uint8_t data[], int xOffset,int section){
     
     int i;
     int j = 0;
@@ -256,16 +255,16 @@ static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, in
             int z = (16 - (i%imagewidth)) + top_padding + 16;
             
             int ind = (z)+j+xOffset;
-            int p4 = pixelForIndex(ind, buffer->data[ind]);
+            int p4 = pixelForIndex(ind, data[ind]);
 
             ind = (z)+j+realimagewidth+xOffset;
-            int p3 = pixelForIndex(ind, buffer->data[ind]);
+            int p3 = pixelForIndex(ind, data[ind]);
 
             ind = (z)+j+realimagewidth*2+xOffset;
-            int p2 = pixelForIndex(ind, buffer->data[ind]);
+            int p2 = pixelForIndex(ind, data[ind]);
 
             ind = (z)+j+realimagewidth*3+xOffset; 
-            int p1 = pixelForIndex(ind, buffer->data[ind]);
+            int p1 = pixelForIndex(ind, data[ind]);
 
             int packed_4_pix = pack(p1,p2,p3,p4);
 
@@ -283,31 +282,45 @@ static void renderVidSection(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer, in
 
 }
 
-static void renderVid(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer){
+static void renderVid(MMAL_BUFFER_HEADER_T *buffer){
 
     int xOffset = 0;
-    renderVidSection(port,buffer,xOffset,0x00);
+    renderVidSection(buffer->data,xOffset,0x00);
         
     xOffset = 16;
-    renderVidSection(port,buffer,xOffset,0x00);
+    renderVidSection(buffer->data,xOffset,0x00);
 
     xOffset = 0;
-    renderVidSection(port,buffer,xOffset,0x01);
+    renderVidSection(buffer->data,xOffset,0x01);
 
     xOffset = 16;
-    renderVidSection(port,buffer,xOffset,0x01);
+    renderVidSection(buffer->data,xOffset,0x01);
 
 }
 
+void playbackFrame(void *data){
+    
+    int xOffset = 0;
+    renderVidSection(data,xOffset,0x00);
+        
+    xOffset = 16;
+    renderVidSection(data,xOffset,0x00);
 
-void setDisplayVideo(int shouldDisplay){
-    displayVideo = shouldDisplay;
+    xOffset = 0;
+    renderVidSection(data,xOffset,0x01);
+
+    xOffset = 16;
+    renderVidSection(data,xOffset,0x01);
+}
+
+
+void setDisplayMode(DisplayMode mode){
+    displayMode = mode;
 }
 
 void displayImage(unsigned int *pixelstodraw){
     overlayPixels = pixelstodraw;
 }
-
 
 /**
  *  buffer header callback function for vieo
@@ -335,8 +348,10 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
             pData->pstate->framescaptured++;
 
             videoFrameWillRender(pData->pstate->framescaptured);
-            renderVid(port,buffer);
-            videoFrameDidRender(buffer);
+            if(displayMode != displayModePlayback){
+                renderVid(buffer);
+            }
+            videoFrameDidRender(buffer,pData->pstate->framescaptured);
             
             mmal_buffer_header_mem_unlock(buffer);
         }
@@ -591,7 +606,7 @@ int ledmirror_run()
     if (!bcm2835_init())
         return -1;
 
-    displayVideo = 1;
+    displayMode = displayModeVideoAndOverlay;
 
     bcm2835_gpio_fsel(RST, BCM2835_GPIO_FSEL_OUTP);
 

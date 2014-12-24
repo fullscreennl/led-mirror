@@ -1,9 +1,18 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "ledmirror.h"
 #include "utils.h"
 #include "animation.h"
 
+#define RECORDING_LENGTH 150
+#define BUFFER_SIZE 6144
+
 static int mycounter = 0;
 
+static void *recordedBuffers[RECORDING_LENGTH];
+int recordedCounter = 0;
 
 int quantize(int level)
 {
@@ -21,52 +30,41 @@ int quantize(int level)
 }
 
 
-void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer){
-    printf("buffer size %i\n",buffer->alloc_size);    
+void createRecordingBuffer(){
+    int i;
+    for(i=0; i< RECORDING_LENGTH; i++){
+        uint8_t *newbuffer = malloc(BUFFER_SIZE);
+        recordedBuffers[i] = newbuffer;
+    }
+}
+
+void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
+    if(framecounter < RECORDING_LENGTH){
+        memcpy(recordedBuffers[recordedCounter],buffer->data,BUFFER_SIZE); 
+        recordedCounter ++;
+    }
+
+    if(framecounter == 150){
+        for (i=0; i<2048; i++){
+            fr[i] = 1;
+        }
+        displayImage(fr);
+    }    
+
+    if(framecounter == 153){
+        setDisplayMode(displayModePlayback);
+    }
+
+    if(framecounter > 180){
+        playbackFrame(recordedBuffers[framecounter%149]);        
+        printf("playback frame %i\n",framecounter%149);
+    }
+
 }
 
 
 void videoFrameWillRender(int framecounter){
 
-    if(framecounter > 300){
-        //setDisplayVideo(0);
-    }
-
-    /* 
-    int frc = framecounter%(1900/32);
-    int offset = frc * 32;
-    int xoffset = frc%32-15; 
-   
-    static unsigned image[2048] = {0};
-    int i;
-    for (i=0; i<2048; i++){
-        image[i] = 0;
-    }
-
-    int pixvalue = 151;
-
-    image[15 + offset + xoffset] = pixvalue; 
-    image[16 + offset + xoffset] = pixvalue;
-    image[47 + offset + xoffset] = pixvalue; 
-    image[48 + offset + xoffset] = pixvalue; 
-    image[77 + offset + xoffset] = pixvalue;
-    image[78 + offset + xoffset] = pixvalue;
-    image[79 + offset + xoffset] = pixvalue;
-    image[80 + offset + xoffset] = pixvalue;
-    image[81 + offset + xoffset] = pixvalue;
-    image[82 + offset + xoffset] = pixvalue; 
-    image[109 + offset + xoffset] = pixvalue;
-    image[110 + offset + xoffset] = pixvalue;
-    image[111 + offset + xoffset] = pixvalue;
-    image[112 + offset + xoffset] = pixvalue;
-    image[113 + offset + xoffset] = pixvalue;
-    image[114 + offset + xoffset] = pixvalue; 
-    image[143 + offset + xoffset] = pixvalue;
-    image[144 + offset + xoffset] = pixvalue;
-    image[175 + offset + xoffset] = pixvalue;
-    image[176 + offset + xoffset] = pixvalue; 
-    */
-        
     static unsigned clearframe[2048] = {0};
 
     if(framecounter%15 == 0 && mycounter < 11){
@@ -80,7 +78,6 @@ void videoFrameWillRender(int framecounter){
     if(mycounter >= 13){
         mycounter = 0;
     }
-
 
     void *frames[14];
 
@@ -105,6 +102,7 @@ void videoFrameWillRender(int framecounter){
 
 int main(int argc, const char **argv)
 {
+    createRecordingBuffer();
     int exitcode = ledmirror_run();
     return exitcode;
 }

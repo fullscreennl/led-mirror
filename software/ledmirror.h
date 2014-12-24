@@ -1,3 +1,6 @@
+#include "interface/mmal/mmal.h"
+#include "interface/mmal/mmal_buffer.h"
+
 #ifndef LEDMIRROR_H
 #define LEDMIRROR_H
 
@@ -11,6 +14,7 @@ int pack(int p1,int p2,int p3,int p4);
 
 //implemented by main.c
 int quantize(int level);
-void videoFrameDidRender(int framecounter);
+void videoFrameWillRender(int framecounter);
+void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer);
 
 #endif

@@ -334,9 +334,10 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
             mmal_buffer_header_mem_lock(buffer);
             pData->pstate->framescaptured++;
 
-            videoFrameDidRender(pData->pstate->framescaptured);
+            videoFrameWillRender(pData->pstate->framescaptured);
             renderVid(port,buffer);
-
+            videoFrameDidRender(buffer);
+            
             mmal_buffer_header_mem_unlock(buffer);
         }
 

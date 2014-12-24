@@ -21,7 +21,12 @@ int quantize(int level)
 }
 
 
-void videoFrameDidRender(int framecounter){
+void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer){
+    printf("buffer size %i\n",buffer->alloc_size);    
+}
+
+
+void videoFrameWillRender(int framecounter){
 
     if(framecounter > 300){
         //setDisplayVideo(0);

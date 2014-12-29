@@ -10,10 +10,12 @@
 #define BUFFER_SIZE 6144
 
 int loopingClock = 0;
+int recordedCounter = 0;
+int playbackCounter = 0;
 int countDownClock = 0;
 
 static void *recordedBuffers[RECORDING_LENGTH];
-int recordedCounter = 0;
+static unsigned clearframe[2048] = {0};
 
 int quantize(int level)
 {
@@ -41,17 +43,20 @@ void createRecordingBuffer(){
 
 void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     
-    if(recordedCounter < RECORDING_LENGTH && loopingClock > 166){
+    if(recordedCounter < RECORDING_LENGTH && loopingClock > 77){
         memcpy(recordedBuffers[recordedCounter],buffer->data,BUFFER_SIZE); 
         recordedCounter ++;
+        displayImage(frame7);
     }
 
-    if(loopingClock == 300){
+    if(loopingClock == 227){
+        displayImage(clearframe);
         setDisplayMode(displayModePlayback);
     }
 
-    if(loopingClock > 300){
-        playbackFrame(recordedBuffers[loopingClock%(RECORDING_LENGTH-1)]);        
+    if(loopingClock >= 227 && playbackCounter < RECORDING_LENGTH){
+        playbackFrame(recordedBuffers[149-playbackCounter]);    
+        playbackCounter ++;    
     }
 
 }
@@ -61,14 +66,13 @@ void videoFrameWillRender(int framecounter){
 
     loopingClock ++;
     
-    static unsigned clearframe[2048] = {0};
-
-    if(loopingClock%15 == 0 && countDownClock < 11){
+    if(loopingClock%7 == 0 && countDownClock < 11){
         countDownClock ++;
     }
 
-    if(loopingClock == 600){
+    if(loopingClock == 377){
         setDisplayMode(displayModeVideoAndOverlay);
+        playbackCounter = 0;
         loopingClock = 0;
         countDownClock = 0;
         recordedCounter = 0;
@@ -90,6 +94,13 @@ void videoFrameWillRender(int framecounter){
     frames[11] = clearframe;
 
     displayImage(frames[countDownClock]);
+    if(recordedCounter < RECORDING_LENGTH && loopingClock > 77){
+        if(loopingClock%6 == 0){
+            displayImage(frame7);
+        }else{
+            displayImage(frame8);
+        }
+    }
 
 }
 

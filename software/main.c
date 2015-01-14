@@ -4,18 +4,34 @@
 
 #include "ledmirror.h"
 #include "utils.h"
-#include "animation.h"
+#include "menu_overlay.h"
 
-#define RECORDING_LENGTH 150
+#include "menu.h"
+#include "looper.h"
+
 #define BUFFER_SIZE 6144
+#define THRESHOLD 50
 
-int loopingClock = 0;
-int recordedCounter = 0;
-int playbackCounter = 0;
-int countDownClock = 0;
+typedef enum{
+    appStateMenu = 1,
+    appStateLooper = 2,
+    appSateApp2 = 3,
+    appSateApp3 = 4
+}AppState;
 
-static void *recordedBuffers[RECORDING_LENGTH];
 static unsigned clearframe[2048] = {0};
+
+static unsigned sensor_1[16] = {276,277,278,279,
+                                340,341,342,343,
+                                404,405,406,407,
+                                468,469,470,471};
+
+static unsigned sensor_2[16] = {};
+static unsigned sensor_3[16] = {};
+
+float prevAverage = 0;
+
+AppState appState = appStateMenu;
 
 int quantize(int level)
 {
@@ -32,81 +48,57 @@ int quantize(int level)
     return output_pixel;
 }
 
+void returnToMenu(){
+    appState = appStateMenu;
+}
 
-void createRecordingBuffer(){
+int readSensorState(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     int i;
-    for(i=0; i< RECORDING_LENGTH; i++){
-        uint8_t *newbuffer = malloc(BUFFER_SIZE);
-        recordedBuffers[i] = newbuffer;
+    float totalPixelValues = 0.0;
+    for(i=0;i<16;i++){
+        int pixelindex = sensor_1[i];
+        char pixelValue = buffer->data[pixelindex];
+        totalPixelValues += pixelValue;
+    }    
+    float avg = totalPixelValues/16.0;
+
+    if(prevAverage == 0){
+        prevAverage = avg;
+    }else{
+        float delta = fabs(avg-prevAverage);
+        if(delta > THRESHOLD){
+            printf("TRIGGER %f \n",delta);
+            return 1;
+        }
+        prevAverage = (prevAverage+avg) / 2.0;
     }
+    return 0;
 }
 
 void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
-    
-    if(recordedCounter < RECORDING_LENGTH && loopingClock > 77){
-        memcpy(recordedBuffers[recordedCounter],buffer->data,BUFFER_SIZE); 
-        recordedCounter ++;
-        displayImage(frame7);
+    if(appState == appStateLooper){
+        looper_videoFrameDidRender(buffer,framecounter);
+        return;
     }
-
-    if(loopingClock == 227){
-        displayImage(clearframe);
-        setDisplayMode(displayModePlayback);
+    int didTrigger = readSensorState(buffer,framecounter);
+    if(didTrigger){
+       prevAverage = 0;
+       looper_init();
+       appState = appStateLooper; 
     }
-
-    if(loopingClock >= 227 && playbackCounter < RECORDING_LENGTH){
-        playbackFrame(recordedBuffers[149-playbackCounter]);    
-        playbackCounter ++;    
-    }
-
 }
 
-
 void videoFrameWillRender(int framecounter){
-
-    loopingClock ++;
-    
-    if(loopingClock%7 == 0 && countDownClock < 11){
-        countDownClock ++;
+    if(appState == appStateLooper){
+        looper_videoFrameWillRender(framecounter);
+        return;
     }
-
-    if(loopingClock == 377){
-        setDisplayMode(displayModeVideoAndOverlay);
-        playbackCounter = 0;
-        loopingClock = 0;
-        countDownClock = 0;
-        recordedCounter = 0;
-    }
-    
-    void *frames[12];
-
-    frames[0] = frame1;
-    frames[1] = clearframe;
-    frames[2] = frame2;
-    frames[3] = clearframe;
-    frames[4] = frame3;
-    frames[5] = clearframe;
-    frames[6] = frame4;
-    frames[7] = clearframe;
-    frames[8] = frame5;
-    frames[9] = clearframe;
-    frames[10] = frame6;
-    frames[11] = clearframe;
-
-    displayImage(frames[countDownClock]);
-    if(recordedCounter < RECORDING_LENGTH && loopingClock > 77){
-        if(loopingClock%6 == 0){
-            displayImage(frame7);
-        }else{
-            displayImage(frame8);
-        }
-    }
-
+    displayImage(sensor_overlay);
 }
 
 int main(int argc, const char **argv)
 {
-    createRecordingBuffer();
+    setDisplayMode(displayModeVideoAndOverlay);
     int exitcode = ledmirror_run();
     return exitcode;
 }

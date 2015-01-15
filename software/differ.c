@@ -5,6 +5,7 @@
 #include "ledmirror.h"
 #include "utils.h"
 #include "animation.h"
+#include "math.h"
 
 #include "menu.h"
 
@@ -18,7 +19,7 @@ static int playbackCounter = 0;
 static int countDownClock = 0;
 static int APP_DURATION = 200;
 int diffBufferInitialized = 0;
-
+uint8_t *displayBuffer;
 static void *recordedBuffers[CAPTURE_LENGTH];
 
 static unsigned clearframe[2048] = {0};
@@ -38,11 +39,12 @@ int differ_quantize(int level)
     return output_pixel;
 }
 
-void createDiffBuffer(){
+void createBuffers(){
     if(diffBufferInitialized){
         return;
     }
     uint8_t *diffBuffer = malloc(BUFFER_SIZE);
+    displayBuffer = malloc(BUFFER_SIZE);
     recordedBuffers[0] = diffBuffer;
     diffBufferInitialized = 1;
 }
@@ -61,12 +63,18 @@ void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     }
 
     if(differClock >= (COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH)){
-        playbackFrame(recordedBuffers[0]);    
+        differ_createOutputVideo(buffer->data, recordedBuffers[0], &displayBuffer); 
+        playbackFrame(displayBuffer);    
         playbackCounter ++;    
     }
 
 }
 
+void differ_createOutputVideo(uint8_t* inputbuffer, uint8_t* refbuffer, uint8_t* outputBuffer){
+    for(int i =0; i< BUFFER_SIZE;i++){
+        outputBuffer[i] = rand()%255;
+    }
+}
 
 void differ_videoFrameWillRender(int framecounter){
 

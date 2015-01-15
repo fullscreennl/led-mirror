@@ -21,6 +21,8 @@ typedef enum{
     appStateDifference = 4
 }AppState;
 
+static int initPeriod = 10; //frames
+
 static unsigned clearframe[2048] = {0};
 
 static unsigned sensor_1[16] = {276,277,278,279,
@@ -70,6 +72,9 @@ void returnToMenu(){
 }
 
 int readSensorState(unsigned sensor[],float *prevAverage, MMAL_BUFFER_HEADER_T *buffer, int framecounter){
+    if(framecounter < initPeriod){
+        return 0;
+    }
     int i;
     float totalPixelValues = 0.0;
     for(i=0;i<16;i++){

@@ -43,9 +43,7 @@ static unsigned sensor_3[16] = {296,297,298,299,
 float avg1 = 0;
 float avg2 = 0;
 float avg3 = 0;
-float *prevAverage_sensor1 = &avg1;
-float *prevAverage_sensor2 = &avg2;
-float *prevAverage_sensor3 = &avg3;
+float *prevAverage = &avg1;
 
 AppState appState = appStateMenu;
 
@@ -71,10 +69,11 @@ void returnToMenu(){
     appState = appStateMenu;
 }
 
-int readSensorState(unsigned sensor[],float *prevAverage, MMAL_BUFFER_HEADER_T *buffer, int framecounter){
+int readSensorState(unsigned sensor[],float *avgvar, MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     if(framecounter < initPeriod){
         return 0;
     }
+    prevAverage = avgvar;
     int i;
     float totalPixelValues = 0.0;
     for(i=0;i<16;i++){
@@ -113,25 +112,25 @@ void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
         return;
     }
 
-    int sensor_1_didTrigger = readSensorState(sensor_1,prevAverage_sensor1,buffer,framecounter);
+    int sensor_1_didTrigger = readSensorState(sensor_1,&avg1,buffer,framecounter);
     if(sensor_1_didTrigger){
-       *prevAverage_sensor1 = 0;
+       avg1 = 0;
        looper_init();
        appState = appStateLooper;
        return; 
     }
 
-    int sensor_2_didTrigger = readSensorState(sensor_2,prevAverage_sensor2,buffer,framecounter);
+    int sensor_2_didTrigger = readSensorState(sensor_2,&avg2,buffer,framecounter);
     if(sensor_2_didTrigger){
-       *prevAverage_sensor2 = 0;
+       avg2 = 0;
        painter_init();
        appState = appStatePainter;
        return; 
     }
 
-    int sensor_3_didTrigger = readSensorState(sensor_3,prevAverage_sensor3,buffer,framecounter);
+    int sensor_3_didTrigger = readSensorState(sensor_3,&avg3,buffer,framecounter);
     if(sensor_3_didTrigger){
-       *prevAverage_sensor3 = 0;
+       avg3 = 0;
        differ_init();
        appState = appStateDifference;
        return; 

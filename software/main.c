@@ -127,6 +127,7 @@ void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     int sensor_3_didTrigger = readSensorState(sensor_3,prevAverage_sensor3,buffer,framecounter);
     if(sensor_3_didTrigger){
        *prevAverage_sensor3 = 0;
+       differ_init();
        appState = appStateDifference;
        return; 
     }

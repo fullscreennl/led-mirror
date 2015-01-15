@@ -61,7 +61,6 @@ void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     }
 
     if(differClock >= (COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH)){
-
         playbackFrame(recordedBuffers[0]);    
         playbackCounter ++;    
     }

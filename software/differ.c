@@ -71,7 +71,8 @@ void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
 }
 
 void differ_createOutputVideo(uint8_t* inputbuffer, uint8_t* refbuffer, uint8_t* outputBuffer){
-    for(int i =0; i< BUFFER_SIZE;i++){
+    int i;
+    for(i =0; i< BUFFER_SIZE;i++){
         outputBuffer[i] = rand()%255;
     }
 }

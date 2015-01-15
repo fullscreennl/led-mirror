@@ -70,7 +70,7 @@ void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     }
 
     if(differClock >= (COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH)){
-        differ_createOutputVideo(buffer->data, recordedBuffers[0], &displayBuffer); 
+        differ_createOutputVideo(buffer->data, recordedBuffers[0], displayBuffer); 
         playbackFrame(displayBuffer);    
         playbackCounter ++;    
     }
@@ -133,6 +133,6 @@ void differ_init()
     countDownClock = 0;
     
     //createRecordingBuffer();
-    createDiffBuffer();
+    createBuffers();
 }
 

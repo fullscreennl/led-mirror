@@ -151,7 +151,15 @@ void videoFrameWillRender(int framecounter){
         differ_videoFrameWillRender(framecounter);
         return;
     }
-    displayImage(sensor_overlay);
+    int odd = 0;
+    if((int)(floor((float)framecounter/10.0))%2==0){
+        odd = 1;
+    }
+    if(odd==0){
+        displayImage(sensor_overlay2);
+    }else{
+        displayImage(sensor_overlay1);
+    }
 }
 
 int main(int argc, const char **argv)

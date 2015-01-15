@@ -53,7 +53,11 @@ void differ_createOutputVideo(uint8_t* inputbuffer, uint8_t* refbuffer, uint8_t*
     int i;
     for(i =0; i< BUFFER_SIZE;i++){
         //outputBuffer[i] = rand()%255;
-        outputBuffer[i] = abs(inputbuffer[i] - refbuffer[i]);
+        int diff = abs(inputbuffer[i] - refbuffer[i]);
+        if (diff > 10){
+            diff = 240;
+        }
+        outputBuffer[i] = diff;
     }
 }
 

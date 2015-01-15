@@ -49,6 +49,13 @@ void createBuffers(){
     diffBufferInitialized = 1;
 }
 
+void differ_createOutputVideo(uint8_t* inputbuffer, uint8_t* refbuffer, uint8_t* outputBuffer){
+    int i;
+    for(i =0; i< BUFFER_SIZE;i++){
+        outputBuffer[i] = rand()%255;
+    }
+}
+
 void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     //countdown sequence takes 77 frames, after that record diff frame
     if(recordedCounter < CAPTURE_LENGTH && differClock > COUNTDOWN_SEQ_LENGTH){
@@ -70,12 +77,7 @@ void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
 
 }
 
-void differ_createOutputVideo(uint8_t* inputbuffer, uint8_t* refbuffer, uint8_t* outputBuffer){
-    int i;
-    for(i =0; i< BUFFER_SIZE;i++){
-        outputBuffer[i] = rand()%255;
-    }
-}
+
 
 void differ_videoFrameWillRender(int framecounter){
 

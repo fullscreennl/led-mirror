@@ -18,9 +18,9 @@ static int playbackCounter = 0;
 static int countDownClock = 0;
 static int APP_DURATION = 200;
 int diffBufferInitialized = 0;
-uint8_t *diffBuffer;
 
 static void *recordedBuffers[CAPTURE_LENGTH];
+
 static unsigned clearframe[2048] = {0};
 
 int differ_quantize(int level)
@@ -42,14 +42,15 @@ void createDiffBuffer(){
     if(diffBufferInitialized){
         return;
     }
-    diffBuffer = malloc(BUFFER_SIZE);
+    uint8_t *diffBuffer = malloc(BUFFER_SIZE);
+    recordedBuffers[0] = diffBuffer;
     diffBufferInitialized = 1;
 }
 
 void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     //countdown sequence takes 77 frames, after that record diff frame
     if(recordedCounter < CAPTURE_LENGTH && differClock > COUNTDOWN_SEQ_LENGTH){
-        memcpy(diffBuffer,buffer->data,BUFFER_SIZE); 
+        memcpy(recordedBuffers[0],buffer->data,BUFFER_SIZE); 
         recordedCounter ++;
         displayImage(frame7);
     }
@@ -61,7 +62,7 @@ void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
 
     if(differClock >= (COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH)){
 
-        playbackFrame(diffBuffer);    
+        playbackFrame(recordedBuffers[0]);    
         playbackCounter ++;    
     }
 
@@ -77,7 +78,7 @@ void differ_videoFrameWillRender(int framecounter){
     }
     
     //return to main menu after APP DURATION
-    if(differClock == COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH + APP_DURATION){
+    if(differClock == (COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH + APP_DURATION)){
         setDisplayMode(displayModeVideoAndOverlay);
         playbackCounter = 0;
         differClock = 0;

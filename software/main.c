@@ -49,9 +49,6 @@ AppState appState = appStateMenu;
 
 int quantize(int level)
 {
-    if(appState == appStatePainter){
-        return painter_quantize(level);
-    }
     int output_pixel;
     if(level < 50){
         output_pixel = 0;

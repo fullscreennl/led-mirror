@@ -123,9 +123,17 @@ To start automatically on boot create an rc.local in /etc
 
 Warning this is a massive soldering job. We started by soldering the LED panel PCBs. Headers first and LEDS (other side of PCB) second. After that you can partially implement the Main Board, testing one chip setup at a time.
 
-![Mainboard desing (Osmond PCB)](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/driverboard_lrg.png "Mainboard desing (Osmond PCB)")  
+![Mainboard design (Osmond PCB)](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/driverboard_lrg.png "Mainboard design (Osmond PCB)")  
+*fig 1.a Screenshot of Osmond showing the mainboard PCB design*
 
 ![ledmodule design (Osmond PCB)](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/ledmodule_lrg.png "ledmodule design (Osmond PCB)")  
+*fig 1.b Screenshot of Osmond showing the ledmodule PCB design*
+
+![PCBs (semi-)assembled](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/pcb_builds.jpg "PCBs (semi-)assembled")  
+*fig 2.0 PCBs (semi-)assembled*
+
+![ledmodule design (Osmond PCB)](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/boards_installed.jpg "ledmodule design (Osmond PCB)")  
+*fig 3.0 Back of LED panel, all PCBs installed*
 
 
  

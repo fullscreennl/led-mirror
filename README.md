@@ -3,7 +3,7 @@ Interactive LED Mirror
 
 2048 interactive pixels with Raspberry PI and Raspicam
 
-#How to build the software
+##How to build the software
 This code runs on Raspbian. We use a model B second revision but it will probably run on any Pi.
 
 ###1) Download / clone Raspberry Pi userland code

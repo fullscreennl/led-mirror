@@ -4,7 +4,7 @@ Interactive LED Mirror
 2048 interactive pixels with Raspberry PI and Raspicam
 
 ##How to build the software
-This code runs on Raspbian. We use a model B second revision but it will probably run on any Pi.
+This code runs on Raspbian. We use a model B second revision but it will probably run on any Pi. This code is based on a modified / stripped down version of raspivid. We found some very useful info on the website of Chris Cummings [http://www.cheerfulprogrammer.com/downloads/camcv.c](www.cheerfulprogrammer.com/downloads/camcv.c) and Pierre Raufast [http://raufast.org/download/camcv_vid0.c](http://raufast.org/download/camcv_vid0.c)
 
 ###1) Download / clone Raspberry Pi userland code
 Create a folder src in your home dir and clone userland into this folder.
@@ -37,7 +37,7 @@ The software is in led-mirror/software
 	cd led-mirror/software
 	sudo make 
 	
-You now a ledmirror binary
+You now have a ledmirror binary
 
 ###4) Run
 
@@ -69,5 +69,5 @@ To start automatically on boot create an rc.local in /etc
 	exit 0
 
 
-#How to build the hardware
+##How to build the hardware
 

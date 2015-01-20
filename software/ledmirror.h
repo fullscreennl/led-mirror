@@ -14,10 +14,10 @@ typedef enum{
 extern const int imagewidth;
 extern const int imageheight;
 
-//display a superimposed image of 2048 pixels
+//displays a superimposed image of 2048 pixels
 void displayImage(unsigned int *pixelstodraw);
 
-//playpack a recorded or constructed frame buffer
+//plays back a recorded or constructed frame buffer
 void playbackFrame(void *data);
 
 //sets the display mode
@@ -26,10 +26,10 @@ void playbackFrame(void *data);
 //  displayModePlayback = 3
 void setDisplayMode(DisplayMode mode);
 
-//start the capturing and dispatching of video events
+//starts the capturing and dispatching of video events
 int ledmirror_run();
 
-//pack the state of 4 pixels, pixels are 2 bits = 4 intensity levels
+//packs the state of 4 pixels, pixels are 2 bits = 4 intensity levels
 //this is normally only used for animations that do not supply full frame buffers
 //NOTE: the pack function will call the quantize function in the delegate before packing 
 //
@@ -51,7 +51,7 @@ int ledmirror_run();
 //
 int pack(int p1,int p2,int p3,int p4);
 
-//this protocal should be implemented by apps/code 
+//this protocol should be implemented by apps/code 
 //calling ledmirror_run() for handling video events
 //  
 //  int quantize(int level);
@@ -62,7 +62,7 @@ int pack(int p1,int p2,int p3,int p4);
 //incomming between 0-255 output between 0-3
 int quantize(int level);
 
-//triggered berfor a video frame will render
+//triggered before a video frame will render
 void videoFrameWillRender(int framecounter);
 
 //triggered after a video frame did render

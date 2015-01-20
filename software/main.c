@@ -1,6 +1,6 @@
 //
 // This app will display 3 'sensors' at the top of the 
-// led instalation. (a very simple menu sytem). If motion is detected
+// led installation. (a very simple menu sytem). If motion is detected
 // in one of the sensors it will forward the ledmirror protocol events to
 // different apps (looper,painter,differ)
 //

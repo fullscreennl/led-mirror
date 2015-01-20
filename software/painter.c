@@ -1,7 +1,7 @@
 //
 //This app copies the highlights of the video frames to 
 //a frame buffer, so the spectator can 'paint/draw' with 
-//highlights, for instance a flash light.
+//highlights, for instance a flashlight.
 //
 #include <stdio.h>
 #include <stdlib.h>

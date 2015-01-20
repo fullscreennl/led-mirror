@@ -18,7 +18,7 @@ void displayImage(unsigned int *pixelstodraw);
 void playbackFrame(void *data);
 void setDisplayMode(DisplayMode mode);
 int ledmirror_run();
-int pack(int p1,int p2,int p3,int p4);
+//int pack(int p1,int p2,int p3,int p4);
 
 //implemented by main.c
 int quantize(int level);

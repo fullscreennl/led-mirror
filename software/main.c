@@ -23,7 +23,7 @@ typedef enum{
 
 static int initPeriod = 10; //frames
 
-static unsigned clearframe[2048] = {0};
+//static unsigned clearframe[2048] = {0};
 
 static unsigned sensor_1[16] = {276,277,278,279,
                                 340,341,342,343,

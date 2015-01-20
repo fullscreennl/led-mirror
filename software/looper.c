@@ -1,3 +1,7 @@
+//
+//This app records approx 10 seconds of video frames, after a countdown. 
+//It will playback the video backwards before returning to the menu.
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,10 +15,15 @@
 #define RECORDING_LENGTH 150
 #define BUFFER_SIZE 6144
 
-int loopingClock = 0;
-int recordedCounter = 0;
-int playbackCounter = 0;
-int countDownClock = 0;
+static int loopingClock = 0;
+static int recordedCounter = 0;
+static int playbackCounter = 0;
+static int countDownClock = 0;
+
+//durations in frames
+static int appDuration = 377; 
+static int countdownDuration = 77;
+static int recordingDuration = 227;
 
 int bufferInitialized = 0;
 
@@ -51,19 +60,22 @@ void createRecordingBuffer(){
 
 void looper_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     
-    if(recordedCounter < RECORDING_LENGTH && loopingClock > 77){
+    //recording
+    if(recordedCounter < RECORDING_LENGTH && loopingClock > countdownDuration){
         memcpy(recordedBuffers[recordedCounter],buffer->data,BUFFER_SIZE); 
         recordedCounter ++;
         displayImage(frame7);
     }
 
-    if(loopingClock == 227){
+    //start playback
+    if(loopingClock == recordingDuration){
         displayImage(clearframe);
         setDisplayMode(displayModePlayback);
     }
 
-    if(loopingClock >= 227 && playbackCounter < RECORDING_LENGTH){
-        playbackFrame(recordedBuffers[149-playbackCounter]);    
+    //backwards playback
+    if(loopingClock >= recordingDuration && playbackCounter < RECORDING_LENGTH){
+        playbackFrame(recordedBuffers[(RECORDING_LENGTH-1)-playbackCounter]);    
         playbackCounter ++;    
     }
 
@@ -78,7 +90,7 @@ void looper_videoFrameWillRender(int framecounter){
         countDownClock ++;
     }
 
-    if(loopingClock == 377){
+    if(loopingClock == appDuration){
         setDisplayMode(displayModeVideoAndOverlay);
         playbackCounter = 0;
         loopingClock = 0;
@@ -104,7 +116,7 @@ void looper_videoFrameWillRender(int framecounter){
     frames[11] = clearframe;
 
     displayImage(frames[countDownClock]);
-    if(recordedCounter < RECORDING_LENGTH && loopingClock > 77){
+    if(recordedCounter < RECORDING_LENGTH && loopingClock > countdownDuration){
         if(loopingClock%6 == 0){
             displayImage(frame7);
         }else{

@@ -137,10 +137,17 @@ Warning this is a massive soldering job. We started by soldering the LED panel P
 
 ####Jumper config
 
-In order to keep the design of the LED panel pcb as uniform as possible, we decided to make them configurable through the use of jumpers. All led panel PCBs receive all 16 columns of data through the ribbon cable, but the jumper decides which column is selected. Of cource this depends on the relative location of the LED-PCB in the subpanel (16 panels, 16 by 8 LEDS per MAX6960).
+In order to keep the design of the LED panel pcb as uniform as possible, we decided to make them configurable through the use of jumpers. All led panel PCBs receive all 16 columns of data through the ribbon cable (and 8 rows of course), but the jumper decides which column is selected. Of cource this depends on the relative location of the LED-PCB in the subpanel (16 panels, 16 by 8 LEDS per MAX6960).
 
 ![LEDmodule jumper configuration detail](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/jumper_config.jpg "LEDmodule jumper configuration detail")  
 *fig 4.0 Back of LED panel, jumper configuration detail*
+
+##Design decision
+
+The following document shows how we configured our panel hardware/software wise. It is also a quick reference how the MAXes are addressed to show their relevant data in our chosen configuration/mode. All wrapping/manupulation of image data happens in software.
+![LEDPanel schematic layout](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/ledpanel_layout.png "LEDPanel schematic layout")
+Download as pdf here: [LED-mirror_layout.pdf](https://raw.github.com/fullscreennl/led-mirror/master/docs/LED-mirror_layout.pdf)
+
 
 
  

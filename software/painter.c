@@ -1,3 +1,8 @@
+//
+//This app copies the highlights of the video frames to 
+//a frame buffer, so the spectator can 'paint/draw' with 
+//highlights, for instance a flash light.
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +15,8 @@
 
 static unsigned clearframe[2048] = {0};
 static int loopingClock = 0;
+static int appDuration = 300;
+static int brightnessThreshold = 240;
 
 static int bufferInitialized = 0;
 uint8_t *displayBuffer;
@@ -30,11 +37,12 @@ static void clearPainting(){
     }
 }
 
+//copies pixels brighter than threshold to the painting
 void painter_createOutputVideo(uint8_t* inputbuffer, uint8_t* outputBuffer){
     int i;
     for(i =0; i< BUFFER_SIZE;i++){
         int pix = 0;
-        if (inputbuffer[i] > 240){
+        if (inputbuffer[i] > brightnessThreshold){
             pix = 255;
         }
         pix = outputBuffer[i] + pix;
@@ -54,7 +62,7 @@ void painter_videoFrameWillRender(int framecounter){
 
     loopingClock ++;
     
-    if(loopingClock == 300){
+    if(loopingClock == appDuration){
         setDisplayMode(displayModeVideoAndOverlay);
         loopingClock = 0;
         returnToMenu();
@@ -65,7 +73,6 @@ void painter_videoFrameWillRender(int framecounter){
 
 void painter_init()
 {
-    printf("INIT PAINTER\n");
     displayImage(clearframe);
     createBuffers();
     clearPainting();

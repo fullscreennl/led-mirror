@@ -1,3 +1,10 @@
+//
+// This app will display 3 'sensors' at the top of the 
+// led instalation. (a very simple menu sytem). If motion is detected
+// in one of the sensors it will forward the ledmirror protocol events to
+// different apps (looper,painter,differ)
+//
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,9 +28,10 @@ typedef enum{
     appStateDifference = 4
 }AppState;
 
-static int initPeriod = 10; //frames
-
-//static unsigned clearframe[2048] = {0};
+//Do not look for motion in the sensors
+//for 10 frames after start up.
+//The camera will adjust exposure.
+static int initPeriod = 10;
 
 static unsigned sensor_1[16] = {276,277,278,279,
                                 340,341,342,343,
@@ -45,8 +53,11 @@ float avg2 = 0;
 float avg3 = 0;
 float *prevAverage = &avg1;
 
+//initializes appstate
 AppState appState = appStateMenu;
 
+//Quantizes the incomming 255 levels to 4 levels,
+//this may need tweaking if lighting conditions change.
 int quantize(int level)
 {
     int output_pixel;
@@ -66,6 +77,7 @@ void returnToMenu(){
     appState = appStateMenu;
 }
 
+//changes appstate if a sensor is triggered
 int readSensorState(unsigned sensor[],float *avgvar, MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     if(framecounter < initPeriod){
         return 0;
@@ -94,6 +106,7 @@ int readSensorState(unsigned sensor[],float *avgvar, MMAL_BUFFER_HEADER_T *buffe
     return 0;
 }
 
+//if the appstate is not 'menu' forwards the events to the selected app
 void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     
     if(appState == appStateLooper){
@@ -135,6 +148,7 @@ void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
 
 }
 
+//displays the menu overlay or forwards to selected app
 void videoFrameWillRender(int framecounter){
     if(appState == appStateLooper){
         looper_videoFrameWillRender(framecounter);

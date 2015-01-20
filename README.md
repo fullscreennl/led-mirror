@@ -1,7 +1,7 @@
 Interactive LED Mirror
 ======================
 
-2048 interactive pixels with Raspberry PI and Raspicam
+2048 interactive pixels with Raspberry PI and Raspicam [project site](http://fullscreennl.github.io/led-mirror)
 
 ##How to build the software
 This code runs on Raspbian. We use a model B second revision but it will probably run on any Pi. This code is based on a modified / stripped down version of raspivid. We found some very useful info on the website of Chris Cummings [http://www.cheerfulprogrammer.com/downloads/camcv.c](http://www.cheerfulprogrammer.com/downloads/camcv.c) and Pierre Raufast [http://raufast.org/download/camcv_vid0.c](http://raufast.org/download/camcv_vid0.c)

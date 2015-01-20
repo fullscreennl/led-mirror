@@ -1,3 +1,8 @@
+//
+//This app captures the background as a difference matte, after this
+//it subtracts this matte from the frames and quantizes, displaying a 
+//silhouette of the moving spectator.
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,13 +16,17 @@
 
 #define CAPTURE_LENGTH 1
 #define BUFFER_SIZE 6144
-#define COUNTDOWN_SEQ_LENGTH 77
 
 int differClock = 0;
 static int recordedCounter = 0;
 static int playbackCounter = 0;
 static int countDownClock = 0;
-static int APP_DURATION = 200;
+
+//durations in frames 
+static int appDuration = 200;
+static int countdownDuration = 77;
+
+static int differenceThreshold = 10;
 int diffBufferInitialized = 0;
 uint8_t *displayBuffer;
 static void *recordedBuffers[CAPTURE_LENGTH];
@@ -52,9 +61,8 @@ void createBuffers(){
 void differ_createOutputVideo(uint8_t* inputbuffer, uint8_t* refbuffer, uint8_t* outputBuffer){
     int i;
     for(i =0; i< BUFFER_SIZE;i++){
-        //outputBuffer[i] = rand()%255;
         int diff = abs(inputbuffer[i] - refbuffer[i]);
-        if (diff > 10){
+        if (diff > differenceThreshold){
             diff = 240;
         }
         outputBuffer[i] = diff;
@@ -62,19 +70,21 @@ void differ_createOutputVideo(uint8_t* inputbuffer, uint8_t* refbuffer, uint8_t*
 }
 
 void differ_videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
+    
     //countdown sequence takes 77 frames, after that record diff frame
-    if(recordedCounter < CAPTURE_LENGTH && differClock > COUNTDOWN_SEQ_LENGTH){
+    if(recordedCounter < CAPTURE_LENGTH && differClock > countdownDuration){
         memcpy(recordedBuffers[0],buffer->data,BUFFER_SIZE); 
         recordedCounter ++;
         displayImage(frame7);
     }
+
     //clearing overlay and setting displaymode on playback
-    if(differClock == (COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH)){
+    if(differClock == (countdownDuration + CAPTURE_LENGTH)){
         displayImage(clearframe);
         setDisplayMode(displayModePlayback);
     }
 
-    if(differClock >= (COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH)){
+    if(differClock >= (countdownDuration + CAPTURE_LENGTH)){
         differ_createOutputVideo(buffer->data, recordedBuffers[0], displayBuffer); 
         playbackFrame(displayBuffer);    
         playbackCounter ++;    
@@ -92,8 +102,8 @@ void differ_videoFrameWillRender(int framecounter){
         countDownClock ++;
     }
     
-    //return to main menu after APP DURATION
-    if(differClock == (COUNTDOWN_SEQ_LENGTH + CAPTURE_LENGTH + APP_DURATION)){
+    //return to main menu after appDuration
+    if(differClock == (countdownDuration + CAPTURE_LENGTH + appDuration)){
         setDisplayMode(displayModeVideoAndOverlay);
         playbackCounter = 0;
         differClock = 0;
@@ -131,13 +141,11 @@ void differ_videoFrameWillRender(int framecounter){
 
 void differ_init()
 {
-    
     differClock = 0;
     recordedCounter = 0;
     playbackCounter = 0;
     countDownClock = 0;
     
-    //createRecordingBuffer();
     createBuffers();
 }
 

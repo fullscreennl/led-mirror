@@ -142,6 +142,13 @@ In order to keep the design of the LED panel pcb as uniform as possible, we deci
 ![LEDmodule jumper configuration detail](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/jumper_config.jpg "LEDmodule jumper configuration detail")  
 *fig 4.0 Back of LED panel, jumper configuration detail*
 
+##Design decision
+
+The following document shows how we configured our panel hardware/software wise. It is also a quick reference how the MAXes are addressed to show their relevant data in our chosen configuration/mode. All wrapping/manupulation of image data happens in software.
+![LEDPanel schematic layout](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/ledpanel_layout.png "LEDPanel schematic layout")
+Download as pdf here: <https://raw.github.com/fullscreennl/led-mirror/master/docs/LED-mirror layout.pdf>
+
+
 
  
 

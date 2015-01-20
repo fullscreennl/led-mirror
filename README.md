@@ -1,7 +1,7 @@
 Interactive LED Mirror
 ======================
 
-2048 interactive pixels with Raspberry PI and Raspicam [(project website)](http://fullscreennl.github.io/led-mirror/)
+2048 interactive pixels with Raspberry PI and Raspicam [(project site)](http://fullscreennl.github.io/led-mirror)
 
 ##How to build the software
 This code runs on Raspbian. We use a model B second revision but it will probably run on any Pi. This code is based on a modified / stripped down version of raspivid. We found some very useful info on the website of Chris Cummings [http://www.cheerfulprogrammer.com/downloads/camcv.c](http://www.cheerfulprogrammer.com/downloads/camcv.c) and Pierre Raufast [http://raufast.org/download/camcv_vid0.c](http://raufast.org/download/camcv_vid0.c)
@@ -126,14 +126,28 @@ Warning this is a massive soldering job. We started by soldering the LED panel P
 ![Mainboard design (Osmond PCB)](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/driverboard_lrg.png "Mainboard design (Osmond PCB)")  
 *fig 1.a Screenshot of Osmond showing the mainboard PCB design*
 
-![ledmodule design (Osmond PCB)](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/ledmodule_lrg.png "ledmodule design (Osmond PCB)")  
+![LEDmodule design (Osmond PCB)](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/ledmodule_lrg.png "LEDmodule design (Osmond PCB)")  
 *fig 1.b Screenshot of Osmond showing the ledmodule PCB design*
 
 ![PCBs (semi-)assembled](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/pcb_builds.jpg "PCBs (semi-)assembled")  
 *fig 2.0 PCBs (semi-)assembled*
 
-![ledmodule design (Osmond PCB)](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/boards_installed.jpg "ledmodule design (Osmond PCB)")  
+![LED panel backside](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/boards_installed.jpg "LED panel backside")  
 *fig 3.0 Back of LED panel, all PCBs installed*
+
+####Jumper config
+
+In order to keep the design of the LED panel pcb as uniform as possible, we decided to make them configurable through the use of jumpers. All led panel PCBs receive all 16 columns of data through the ribbon cable (and 8 rows of course), but the jumper decides which column is selected. Of cource this depends on the relative location of the LED-PCB in the subpanel (16 panels, 16 by 8 LEDS per MAX6960).
+
+![LEDmodule jumper configuration detail](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/jumper_config.jpg "LEDmodule jumper configuration detail")  
+*fig 4.0 Back of LED panel, jumper configuration detail*
+
+##Design decision
+
+The following document shows how we configured our panel hardware/software wise. It is also a quick reference how the MAXes are addressed to show their relevant data in our chosen configuration/mode. All wrapping/manupulation of image data happens in software.
+![LEDPanel schematic layout](https://raw.github.com/fullscreennl/led-mirror/master/docs/images/ledpanel_layout.png "LEDPanel schematic layout")
+Download as pdf here: [LED-mirror_layout.pdf](https://raw.github.com/fullscreennl/led-mirror/master/docs/LED-mirror_layout.pdf)
+
 
 
  

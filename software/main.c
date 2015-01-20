@@ -74,6 +74,7 @@ int quantize(int level)
 }
 
 void returnToMenu(){
+    avg1 = avg2 = avg3 = 0;
     appState = appStateMenu;
 }
 
@@ -124,7 +125,6 @@ void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
 
     int sensor_1_didTrigger = readSensorState(sensor_1,&avg1,buffer,framecounter);
     if(sensor_1_didTrigger){
-       avg1 = 0;
        looper_init();
        appState = appStateLooper;
        return; 
@@ -132,7 +132,6 @@ void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
 
     int sensor_2_didTrigger = readSensorState(sensor_2,&avg2,buffer,framecounter);
     if(sensor_2_didTrigger){
-       avg2 = 0;
        painter_init();
        appState = appStatePainter;
        return; 
@@ -140,7 +139,6 @@ void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
 
     int sensor_3_didTrigger = readSensorState(sensor_3,&avg3,buffer,framecounter);
     if(sensor_3_didTrigger){
-       avg3 = 0;
        differ_init();
        appState = appStateDifference;
        return; 

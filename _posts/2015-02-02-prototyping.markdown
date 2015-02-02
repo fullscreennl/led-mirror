@@ -8,7 +8,7 @@ header-img: "img/contact-bg.jpg"
 ---
 
 <p>
-Before ordering the PCBs Jeroen hand-soldered a prototype of the driverboard using TQFP breakout addaptors and some perfboard.
+Before ordering the PCBs Jeroen hand-soldered a prototype of the driverboard using TQFP breakout adaptors and some perfboard.
 </p>
 
 

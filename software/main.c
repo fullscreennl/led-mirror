@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h> 
+#include "Config.h"
 #include "ledmirror.h"
 #include "utils.h"
 #include "menu_overlay.h"
@@ -22,7 +23,7 @@
 #define THRESHOLD 50
 
 typedef enum{
-    appStateMenu = 1,
+    appStateMenu = 1, 
     appStateLooper = 2,
     appStatePainter = 3,
     appStateDifference = 4
@@ -52,7 +53,7 @@ float avg1 = 0;
 float avg2 = 0;
 float avg3 = 0;
 float *prevAverage = &avg1;
-
+const char *levels;
 //initializes appstate
 AppState appState = appStateMenu;
 
@@ -61,11 +62,13 @@ AppState appState = appStateMenu;
 int quantize(int level)
 {
     int output_pixel;
-    if(level < 50){
+    levels = Config_getLevels();
+    //printf("%i level0",levels[0]);
+    if(level < levels[0]){
         output_pixel = 0;
-    }else if(level < 150){
+    }else if(level < levels[1]){
         output_pixel = 1;
-    }else if(level < 200){
+    }else if(level < levels[2]){
         output_pixel = 2;
     }else{
         output_pixel = 3;
@@ -107,6 +110,20 @@ int readSensorState(unsigned sensor[],float *avgvar, MMAL_BUFFER_HEADER_T *buffe
     return 0;
 }
 
+unsigned* getSensor(int ind){
+    int newApp =  Config_getApp(ind);
+    //printf("app requested: %i on sensor %i\n", newApp, ind);
+    if(newApp == 1){
+        return sensor_1;
+    }else if(newApp == 2){
+        return sensor_2;
+    }else if(newApp == 3){
+        return sensor_3;
+    }else{
+        return sensor_1;
+    }
+}
+
 //if the appstate is not 'menu' forwards the events to the selected app
 void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
     
@@ -123,21 +140,21 @@ void videoFrameDidRender(MMAL_BUFFER_HEADER_T *buffer, int framecounter){
         return;
     }
 
-    int sensor_1_didTrigger = readSensorState(sensor_1,&avg1,buffer,framecounter);
+    int sensor_1_didTrigger = readSensorState(getSensor(1),&avg1,buffer,framecounter);
     if(sensor_1_didTrigger){
        looper_init();
        appState = appStateLooper;
        return; 
     }
 
-    int sensor_2_didTrigger = readSensorState(sensor_2,&avg2,buffer,framecounter);
+    int sensor_2_didTrigger = readSensorState(getSensor(2),&avg2,buffer,framecounter);
     if(sensor_2_didTrigger){
        painter_init();
        appState = appStatePainter;
        return; 
     }
 
-    int sensor_3_didTrigger = readSensorState(sensor_3,&avg3,buffer,framecounter);
+    int sensor_3_didTrigger = readSensorState(getSensor(3),&avg3,buffer,framecounter);
     if(sensor_3_didTrigger){
        differ_init();
        appState = appStateDifference;
@@ -171,8 +188,46 @@ void videoFrameWillRender(int framecounter){
     }
 }
 
+int setIniBasePath(const char *inifilePath){
+    char* token;
+    char* string;
+    char* tofree;
+    string = strdup(inifilePath);
+    if(strlen(inifilePath) > 128){
+        return -1;
+    }
+    char base_path[128] = "";
+    if (string != NULL) {
+        tofree = string;
+        while ((token = strsep(&string, "/")) != NULL){
+            if(strstr(token, ".ini") == NULL) {
+                 strcat(base_path, token);
+                 strcat(base_path, "/");
+            }
+        }
+        free(tofree);
+    }
+    Config_setBasePath(base_path);
+    return 0;
+}
+
 int main(int argc, const char **argv)
 {
+    const char *inifile = "settings.ini";
+    if(argc == 2){
+        inifile = argv[1];
+    }
+
+    if (setIniBasePath(inifile) == -1){
+        printf("%s inifile name to long.\n", inifile);
+        return 1;
+    }
+
+    // 1) load the config
+    Config_load(inifile);
+    levels = Config_getLevels();    
+    
+    //printf("%i level0",levels[0]);
     setDisplayMode(displayModeVideoAndOverlay);
     int exitcode = ledmirror_run();
     return exitcode;

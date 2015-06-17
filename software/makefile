@@ -26,7 +26,7 @@ LFLAGS = -L../../src/userland/build/lib
 LIBS = -lmmal -lmmal_core -lmmal_util -lm -lvcos -lbcm_host
 
 # define the C source files
-SRCS = ledmirror.c bcm2835-1.36/bcm2835.c main.c utils.c looper.c painter.c differ.c
+SRCS = ledmirror.c bcm2835-1.36/bcm2835.c main.c utils.c looper.c painter.c differ.c Config.c inih/ini.c
 #RaspiCLI.c RaspiPreview.c RaspiCamControl.c
 
 # define the C object files 

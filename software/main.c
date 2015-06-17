@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h> 
+#include "Config.h"
 #include "ledmirror.h"
 #include "utils.h"
 #include "menu_overlay.h"
@@ -61,11 +62,12 @@ AppState appState = appStateMenu;
 int quantize(int level)
 {
     int output_pixel;
-    if(level < 50){
+    int levels = Config_getLevels();
+    if(level < levels[0]){
         output_pixel = 0;
-    }else if(level < 150){
+    }else if(level < levels[1]){
         output_pixel = 1;
-    }else if(level < 200){
+    }else if(level < levels[2]){
         output_pixel = 2;
     }else{
         output_pixel = 3;
@@ -173,6 +175,19 @@ void videoFrameWillRender(int framecounter){
 
 int main(int argc, const char **argv)
 {
+    char *inifile = "settings.ini";
+    if(argc == 2){
+        inifile = argv[1];
+    }
+
+    if (setIniBasePath(inifile) == -1){
+        printf("%s inifile name to long.\n", inifile);
+        return 1;
+    }
+
+    // 1) load the config
+    Config_load(inifile);
+    const char *name = Config_getEmail();
     setDisplayMode(displayModeVideoAndOverlay);
     int exitcode = ledmirror_run();
     return exitcode;

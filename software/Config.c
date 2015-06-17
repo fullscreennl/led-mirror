@@ -125,7 +125,7 @@ void Config_load(char *inifilename){
         exit(1);
     }
 
-    printf("Config loaded from '%s': version=%s, name=%s, email=%s w=%i h=%i nib=%f\n", 
+    printf("Config loaded from '%s': version=%s, name=%s, email=%s level0=%i level1=%i level2=%i level3=%i \n", 
         inifilename,
         config.versionString, 
         config.name, 

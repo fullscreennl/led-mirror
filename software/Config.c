@@ -73,25 +73,25 @@ void Config_setBasePath(char *bp){
 
 int Config_getLevel0(){
     if (!config.level0){
-        return LEVLE0;
+        return LEVEL0;
     }
     return config.level0;
 }
 int Config_getLevel1(){
     if (!config.level1){
-        return LEVLE0;
+        return LEVEL1;
     }
     return config.level1;
 }
 int Config_getLevel2(){
     if (!config.level2){
-        return LEVLE2;
+        return LEVEL2;
     }
     return config.level0;
 }
 int Config_getLevel3(){
     if (!config.level3){
-        return LEVLE3;
+        return LEVEL3;
     }
     return config.level3;
 }

@@ -31,25 +31,21 @@ static int Config_handler(void* user, const char* section, const char* name,
 
         pconfig->level2 = atoi(value);
 
-    }else if (MATCH("ledmirror_settings", "level3")) {
-
-        pconfig->level3 = atoi(value);
-
     }else if (MATCH("apps", "app0")) {
 
-        pconfig->app0 = strdup(value);
+        pconfig->app0 = atoi(value);
 
     }else if (MATCH("apps", "app1")) {
 
-        pconfig->app1 = strdup(value);
+        pconfig->app1 = atoi(value);
 
     }else if (MATCH("apps", "app2")) {
 
-        pconfig->app2 = strdup(value);
+        pconfig->app2 = atoi(value);
 
     }else if (MATCH("apps", "app3")) {
 
-        pconfig->app3 = strdup(value);
+        pconfig->app3 = atoi(value);
 
     } else if (MATCH("user", "name")) {
 
@@ -87,45 +83,43 @@ int Config_getLevel2(){
     if (!config.level2){
         return LEVEL2;
     }
-    return config.level0;
-}
-int Config_getLevel3(){
-    if (!config.level3){
-        return LEVEL3;
-    }
-    return config.level3;
+    return config.level2;
 }
 
 const char* Config_getLevels(){
-    int levels[4] = { Config_getLevel0(), Config_getLevel1(), Config_getLevel2(), Config_getLevel3()};
+    char levels[3] = { Config_getLevel0(), Config_getLevel1(), Config_getLevel2()};
     config.levels = levels;
     return config.levels;
 }
 
+int Config_getApp(int i){
+    int apps[4] ={Config_getApp0(),Config_getApp1(),Config_getApp2(),Config_getApp3()};
+    return apps[i];
+}
 const char* Config_getEmail(){
     return config.email;
 }
-const char* Config_getApp0(){
+int Config_getApp0(){
     return config.app0;
 }
-const char* Config_getApp1(){
+int Config_getApp1(){
     return config.app1;
 }
-const char* Config_getApp2(){
+int Config_getApp2(){
     return config.app2;
 }
-const char* Config_getApp3(){
+int Config_getApp3(){
     return config.app3;
 }
 
-void Config_load(char *inifilename){
+void Config_load(const char *inifilename){
     
     if (ini_parse(inifilename, Config_handler, &config) < 0) {
         printf("Can't load '%s'\n",inifilename);
         exit(1);
     }
 
-    printf("Config loaded from '%s': version=%s, name=%s, email=%s level0=%i level1=%i level2=%i level3=%i \n", 
+    printf("Config loaded from '%s': version=%s, name=%s, email=%s level0=%i level1=%i level2=%i app0=%i \n", 
         inifilename,
         config.versionString, 
         config.name, 
@@ -133,7 +127,8 @@ void Config_load(char *inifilename){
         config.level0,
         config.level1,
         config.level2,
-        config.level3);
+        config.app0
+        );
 
     // printf("BASE %s\n", basePath);
     // printf("svg %s\n", Config_getSVGName());
